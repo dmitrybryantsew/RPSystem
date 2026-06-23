@@ -157,6 +157,9 @@ public class RpPathfindingServiceTests
         world.Tiles[new Vec3Int(1, 0, 0)].Solidity = TileSolidity.Solid;
         world.Tiles[new Vec3Int(1, 0, 0)].BulkMaterial = MaterialType.Rock;
         world.Tiles[new Vec3Int(1, 0, 0)].BulkState = MaterialState.Solid;
+        world.TerrainVersion++; // real terrain-mutating code paths (RpJobService, ProcessPhysics)
+                         // bump this automatically; this test mutates tiles directly,
+                         // so it must declare the same intent itself.
 
         var second = _flowFields.GetOrCreateFlowField(world, RpMovementMode.Walk, target);
 

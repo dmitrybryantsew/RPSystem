@@ -266,6 +266,8 @@ public sealed class RpJobService
                 ApplyFurniture(world, tile, job);
                 break;
         }
+
+        world.TerrainVersion++;
     }
 
     private static void ApplyFullWall(Tile tile, RpUnitJob job)

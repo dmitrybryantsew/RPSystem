@@ -106,6 +106,20 @@ public sealed class World
     public Dictionary<Guid, Character> Characters { get; set; } = [];
     public Dictionary<Guid, Item> Items { get; set; } = [];
     public WorldClock Clock { get; set; } = new();
+
+    /// <summary>
+    /// Stable identity for this world instance. Used as a cheap cache key
+    /// for flow fields instead of hashing tile contents.
+    /// </summary>
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    /// <summary>
+    /// Incremented every time a tile's shape (solidity, bulk material/state,
+    /// movement features, or side passability) changes. Used as a cheap cache
+    /// key for flow fields instead of re-hashing every tile on every lookup.
+    /// Code that mutates tile shape MUST increment this.
+    /// </summary>
+    public int TerrainVersion { get; set; }
 }
 
 public sealed class RpWorldContextEntry
@@ -365,6 +379,13 @@ public sealed class Character
     public List<Guid> WornItemIds { get; set; } = [];
     public List<NarrativeEvent> PerceivedLog { get; set; } = [];
     public PerceivedWorldState PerceivedState { get; set; } = new();
+
+    /// <summary>
+    /// Higher values act earlier within a tick. Defaults to 0 for everyone
+    /// (today's behavior is unaffected beyond the tiebreak), but gives future
+    /// initiative/speed systems a place to plug in without changing TickAsync.
+    /// </summary>
+    public int TurnPriority { get; set; }
 }
 
 public sealed class RpNeedState

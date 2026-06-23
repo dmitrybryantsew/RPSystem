@@ -134,37 +134,8 @@ public sealed class RpFlowFieldCell
     public Vec3Int? NextStep { get; set; }
 }
 
-public readonly record struct RpFlowFieldKey(int WorldFingerprint, RpMovementMode MovementMode, Vec3Int Target)
+public readonly record struct RpFlowFieldKey(Guid WorldId, int TerrainVersion, RpMovementMode MovementMode, Vec3Int Target)
 {
     public static RpFlowFieldKey Create(World world, RpMovementMode movementMode, Vec3Int target)
-        => new(ComputeWorldFingerprint(world), movementMode, target);
-
-    private static int ComputeWorldFingerprint(World world)
-    {
-        var hash = new HashCode();
-        hash.Add(world.Tiles.Count);
-        foreach (var tile in world.Tiles.Values.OrderBy(tile => tile.Position.X).ThenBy(tile => tile.Position.Y).ThenBy(tile => tile.Position.Z))
-        {
-            hash.Add(tile.Position);
-            hash.Add(tile.Solidity);
-            hash.Add(tile.BulkState);
-            hash.Add(tile.BulkMaterial);
-            hash.Add(tile.FluidLevel);
-            foreach (var feature in tile.MovementFeatures.OrderBy(feature => feature))
-            {
-                hash.Add(feature);
-            }
-
-            for (var i = 0; i < tile.Sides.Length; i++)
-            {
-                var side = tile.Sides[i];
-                hash.Add(i);
-                hash.Add(side?.IsPassable);
-                hash.Add(side?.IsOpen);
-                hash.Add(side?.Material);
-            }
-        }
-
-        return hash.ToHashCode();
-    }
+        => new(world.Id, world.TerrainVersion, movementMode, target);
 }

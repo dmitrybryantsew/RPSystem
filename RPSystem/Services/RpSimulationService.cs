@@ -140,7 +140,9 @@ public sealed class RpSimulationService
             events.AddRange(new RpCodedAiService().PlanWorld(world));
         }
 
-        foreach (var character in world.Characters.Values.OrderBy(c => c.Name))
+        foreach (var character in world.Characters.Values
+            .OrderByDescending(c => c.TurnPriority)
+            .ThenBy(c => c.Id))
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (character.Vitals.LifeState != RpLifeState.Conscious)
@@ -1102,6 +1104,7 @@ public sealed class RpSimulationService
                 tile.Solidity = TileSolidity.Empty;
                 tile.BulkMaterial = MaterialType.Air;
                 tile.BulkState = MaterialState.Gas;
+                world.TerrainVersion++;
                 AddEvent(world, events, "World", $"A solid tile at {tile.Position} broke open.");
             }
         }
