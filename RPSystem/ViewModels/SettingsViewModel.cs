@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using ChemCalculationAndManagementApp.Services;
+using RPSystem.Services;
+using RPSystem.Core.Services;
 using Microsoft.Maui.Storage;
 using System;
 using System.Collections.ObjectModel;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 #if WINDOWS
 #endif
 
-namespace ChemCalculationAndManagementApp.ViewModels
+namespace RPSystem.ViewModels
 {
     public partial class SettingsViewModel : ObservableObject
     {

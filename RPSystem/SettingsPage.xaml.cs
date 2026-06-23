@@ -1,6 +1,6 @@
-using ChemCalculationAndManagementApp.ViewModels;
+using RPSystem.ViewModels;
 
-namespace ChemCalculationAndManagementApp
+namespace RPSystem
 {
     public partial class SettingsPage : ContentPage
     {

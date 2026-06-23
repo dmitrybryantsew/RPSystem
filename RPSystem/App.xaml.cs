@@ -1,5 +1,5 @@
 ﻿// App.xaml.cs
-namespace ChemCalculationAndManagementApp
+namespace RPSystem
 {
     public partial class App : Application
     {

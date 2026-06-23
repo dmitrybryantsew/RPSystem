@@ -1,7 +1,7 @@
 using System.Globalization;
-using ChemCalculationAndManagementApp.Models;
+using RPSystem.Core.Models;
 
-namespace ChemCalculationAndManagementApp.Converters
+namespace RPSystem.Converters
 {
     /// <summary>
     /// Converts boolean to arrow indicator (▼ for expanded, ▶ for collapsed).

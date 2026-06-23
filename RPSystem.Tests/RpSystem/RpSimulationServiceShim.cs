@@ -6,5 +6,5 @@ namespace Microsoft.Maui.Storage;
 public static class FileSystem
 {
     public static string AppDataDirectory { get; } =
-        Path.Combine(Path.GetTempPath(), "ChemCalculationAndManagementApp.Tests");
+        Path.Combine(Path.GetTempPath(), "RPSystem.Tests");
 }

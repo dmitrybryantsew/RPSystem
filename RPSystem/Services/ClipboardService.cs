@@ -1,7 +1,8 @@
 using Microsoft.Maui.ApplicationModel.DataTransfer;
+using RPSystem.Core.Services;
 using System.Diagnostics;
 
-namespace ChemCalculationAndManagementApp.Services
+namespace RPSystem.Services
 {
     /// <summary>
     /// MAUI implementation of clipboard service using the Clipboard API

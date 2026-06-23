@@ -1,7 +1,7 @@
 ﻿using ObjCRuntime;
 using UIKit;
 
-namespace ChemCalculationAndManagementApp
+namespace RPSystem
 {
     public class Program
     {

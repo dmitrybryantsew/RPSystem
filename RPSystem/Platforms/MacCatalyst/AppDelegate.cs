@@ -1,6 +1,6 @@
 ﻿using Foundation;
 
-namespace ChemCalculationAndManagementApp
+namespace RPSystem
 {
     [Register("AppDelegate")]
     public class AppDelegate : MauiUIApplicationDelegate

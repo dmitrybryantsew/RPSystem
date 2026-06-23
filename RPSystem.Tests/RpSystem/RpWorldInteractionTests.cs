@@ -1,9 +1,9 @@
 using Xunit;
 using FluentAssertions;
-using ChemCalculationAndManagementApp.RpSystem;
-using ChemCalculationAndManagementApp.Services;
+using RPSystem.Core.RpSystem;
+using RPSystem.Core.Services;
 
-namespace ChemCalculationAndManagementApp.Tests.RpSystem;
+namespace RPSystem.Tests.RpSystem;
 
 public class RpWorldInteractionTests
 {

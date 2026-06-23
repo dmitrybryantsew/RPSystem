@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace ChemCalculationAndManagementApp.ViewModels;
+namespace RPSystem.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {

@@ -1,10 +1,11 @@
-using ChemCalculationAndManagementApp.RpSystem;
-using ChemCalculationAndManagementApp.Services;
-using ChemCalculationAndManagementApp.ViewModels;
+using RPSystem.Core.RpSystem;
+using RPSystem.Services;
+using RPSystem.Core.Services;
+using RPSystem.ViewModels;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 
-namespace ChemCalculationAndManagementApp;
+namespace RPSystem;
 
 public partial class RpSystemPage : ContentPage
 {

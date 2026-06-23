@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace ChemCalculationAndManagementApp.Converters
+namespace RPSystem.Converters
 {
     /// <summary>
     /// Converts non-null values to true, null to false.

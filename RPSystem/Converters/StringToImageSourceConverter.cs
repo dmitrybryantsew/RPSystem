@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Collections.Concurrent;
 
-namespace ChemCalculationAndManagementApp.Converters
+namespace RPSystem.Converters
 {
     /// <summary>
     /// Converts string paths or data URLs to ImageSource.

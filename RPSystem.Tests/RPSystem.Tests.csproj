@@ -26,37 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Compile RP-relevant source files directly instead of referencing the MAUI DLL.
-         This avoids loading MAUI/Windows App SDK dependencies in tests. -->
-    <Compile Include="..\RPSystem\RpSystem\*.cs" Link="RpSystem\%(Filename).cs" />
-    <!-- LLM client and supporting services used by RpSimulationService -->
-    <Compile Include="..\RPSystem\Services\OpenRouter*.cs" Link="Services\%(Filename).cs" />
-    <Compile Include="..\RPSystem\Services\OpenAiProxyEndpoint.cs" Link="Services\OpenAiProxyEndpoint.cs" />
-    <Compile Include="..\RPSystem\Services\AiModelModels.cs" Link="Services\AiModelModels.cs" />
-    <Compile Include="..\RPSystem\Services\AiModelFilter.cs" Link="Services\AiModelFilter.cs" />
-    <Compile Include="..\RPSystem\Services\ISettingsService.cs" Link="Services\ISettingsService.cs" />
-    <Compile Include="..\RPSystem\Services\IClipboardService.cs" Link="Services\IClipboardService.cs" />
-    <!-- Models referenced by ISettingsService (TextMode enum) -->
-    <Compile Include="..\RPSystem\Models\TextMode.cs" Link="Models\TextMode.cs" />
-    <Compile Include="..\RPSystem\Services\RpWorldFactory.cs" Link="Services\RpWorldFactory.cs" />
-    <Compile Include="..\RPSystem\Services\RpBodyFactory.cs" Link="Services\RpBodyFactory.cs" />
-    <Compile Include="..\RPSystem\Services\RpCreatureService.cs" Link="Services\RpCreatureService.cs" />
-    <Compile Include="..\RPSystem\Services\RpAbilityService.cs" Link="Services\RpAbilityService.cs" />
-    <Compile Include="..\RPSystem\Services\RpWorldInspectionService.cs" Link="Services\RpWorldInspectionService.cs" />
-    <Compile Include="..\RPSystem\Services\RpMapRenderProjectionService.cs" Link="Services\RpMapRenderProjectionService.cs" />
-    <Compile Include="..\RPSystem\Services\RpInventoryService.cs" Link="Services\RpInventoryService.cs" />
-    <Compile Include="..\RPSystem\Services\RpInteractionService.cs" Link="Services\RpInteractionService.cs" />
-    <Compile Include="..\RPSystem\Services\RpCaveMapGenerator.cs" Link="Services\RpCaveMapGenerator.cs" />
-    <Compile Include="..\RPSystem\Services\RpCodedAiService.cs" Link="Services\RpCodedAiService.cs" />
-    <Compile Include="..\RPSystem\Services\RpJobService.cs" Link="Services\RpJobService.cs" />
-    <Compile Include="..\RPSystem\Services\RpMovementCostService.cs" Link="Services\RpMovementCostService.cs" />
-    <Compile Include="..\RPSystem\Services\RpFlowFieldService.cs" Link="Services\RpFlowFieldService.cs" />
-    <Compile Include="..\RPSystem\Services\RpPathfindingService.cs" Link="Services\RpPathfindingService.cs" />
-    <Compile Include="..\RPSystem\Services\RpMarkdownImportService.cs" Link="Services\RpMarkdownImportService.cs" />
-    <Compile Include="..\RPSystem\Services\RpCharacterCompositionService.cs" Link="Services\RpCharacterCompositionService.cs" />
-    <Compile Include="..\RPSystem\Services\RpWorldContextEditorService.cs" Link="Services\RpWorldContextEditorService.cs" />
-    <Compile Include="..\RPSystem\Services\RpSimulationService.cs" Link="Services\RpSimulationService.cs" />
-    <Compile Include="..\RPSystem\Services\RpWorldSaveService.cs" Link="Services\RpWorldSaveService.cs" />
+    <ProjectReference Include="..\RPSystem.Core\RPSystem.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,10 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Maui.Devices;
 using Microsoft.Maui.Storage;
+using RPSystem.Core.Services;
+using RPSystem.Core.Models;
 using System;
 using System.Threading.Tasks;
 
-namespace ChemCalculationAndManagementApp.Services
+namespace RPSystem.Services
 {
     public partial class SettingsService : ObservableObject, ISettingsService
     {
@@ -78,7 +80,7 @@ namespace ChemCalculationAndManagementApp.Services
             _localWhisperModelPath = Preferences.Get(LocalWhisperModelPathKey, string.Empty);
             _localWhisperGpuAdapter = Preferences.Get(LocalWhisperGpuAdapterKey, string.Empty);
             _localWhisperFallbackToChutes = Preferences.Get(LocalWhisperFallbackToChutesKey, true);
-            _transcriptionTextMode = (Models.TextMode)Preferences.Get(TranscriptionTextModeKey, (int)Models.TextMode.Replace);
+            _transcriptionTextMode = (RPSystem.Core.Models.TextMode)Preferences.Get(TranscriptionTextModeKey, (int)RPSystem.Core.Models.TextMode.Replace);
             _defaultChatExportFormat = Preferences.Get(DefaultChatExportFormatKey, "json");
             _showConversationTokenTotal = Preferences.Get(ShowConversationTokenTotalKey, false);
             _chatColorScheme = Preferences.Get(ChatColorSchemeKey, "classic");
@@ -151,7 +153,7 @@ namespace ChemCalculationAndManagementApp.Services
         private bool _localWhisperFallbackToChutes;
 
         [ObservableProperty]
-        private Models.TextMode _transcriptionTextMode;
+        private RPSystem.Core.Models.TextMode _transcriptionTextMode;
 
         [ObservableProperty]
         private string _defaultChatExportFormat;
@@ -189,7 +191,7 @@ namespace ChemCalculationAndManagementApp.Services
         partial void OnLocalWhisperModelPathChanged(string value) => Preferences.Set(LocalWhisperModelPathKey, value);
         partial void OnLocalWhisperGpuAdapterChanged(string value) => Preferences.Set(LocalWhisperGpuAdapterKey, value);
         partial void OnLocalWhisperFallbackToChutesChanged(bool value) => Preferences.Set(LocalWhisperFallbackToChutesKey, value);
-        partial void OnTranscriptionTextModeChanged(Models.TextMode value) => Preferences.Set(TranscriptionTextModeKey, (int)value);
+        partial void OnTranscriptionTextModeChanged(RPSystem.Core.Models.TextMode value) => Preferences.Set(TranscriptionTextModeKey, (int)value);
         partial void OnDefaultChatExportFormatChanged(string value) => Preferences.Set(DefaultChatExportFormatKey, value);
         partial void OnShowConversationTokenTotalChanged(bool value) => Preferences.Set(ShowConversationTokenTotalKey, value);
         partial void OnChatColorSchemeChanged(string value) => Preferences.Set(ChatColorSchemeKey, value);

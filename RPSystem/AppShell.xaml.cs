@@ -1,4 +1,4 @@
-﻿namespace ChemCalculationAndManagementApp
+﻿namespace RPSystem
 {
     public partial class AppShell : Shell
     {

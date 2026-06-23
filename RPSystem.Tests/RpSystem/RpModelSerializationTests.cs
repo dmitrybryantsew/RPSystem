@@ -2,9 +2,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
 using FluentAssertions;
-using ChemCalculationAndManagementApp.RpSystem;
+using RPSystem.Core.RpSystem;
 
-namespace ChemCalculationAndManagementApp.Tests.RpSystem;
+namespace RPSystem.Tests.RpSystem;
 
 public class RpModelSerializationTests
 {

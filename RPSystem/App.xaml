@@ -1,9 +1,9 @@
 ﻿<?xml version = "1.0" encoding = "UTF-8" ?>
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:ChemCalculationAndManagementApp"
-             xmlns:converters="clr-namespace:ChemCalculationAndManagementApp.Converters"
-             x:Class="ChemCalculationAndManagementApp.App">
+             xmlns:local="clr-namespace:RPSystem"
+             xmlns:converters="clr-namespace:RPSystem.Converters"
+             x:Class="RPSystem.App">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

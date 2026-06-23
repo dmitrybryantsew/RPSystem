@@ -1,7 +1,7 @@
 using SkiaSharp;
 using Microsoft.Maui.Storage;
 
-namespace ChemCalculationAndManagementApp.Services
+namespace RPSystem.Services
 {
     public static class ImageHelper
     {

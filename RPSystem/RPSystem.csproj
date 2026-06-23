@@ -5,7 +5,7 @@
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
 
 		<OutputType>Exe</OutputType>
-		<RootNamespace>ChemCalculationAndManagementApp</RootNamespace>
+		<RootNamespace>RPSystem</RootNamespace>
 		<AssemblyName>RPSystem</AssemblyName>
 		<UseMaui>true</UseMaui>
 		<SingleProject>true</SingleProject>
@@ -48,6 +48,10 @@
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
 		<AndroidJavaSource Include="Platforms\Android\src\**\*.java" />
 		<AndroidNativeLibrary Include="Platforms\Android\jniLibs\**\*.so" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\RPSystem.Core\RPSystem.Core.csproj" />
 	</ItemGroup>
 
 </Project>

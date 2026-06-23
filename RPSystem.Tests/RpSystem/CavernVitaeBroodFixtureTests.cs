@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Xunit;
 
-namespace ChemCalculationAndManagementApp.Tests.RpSystem;
+namespace RPSystem.Tests.RpSystem;
 
 public class CavernVitaeBroodFixtureTests
 {

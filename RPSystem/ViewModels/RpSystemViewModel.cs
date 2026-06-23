@@ -1,18 +1,19 @@
 using System.Collections.ObjectModel;
-using ChemCalculationAndManagementApp.RpSystem;
-using ChemCalculationAndManagementApp.Services;
+using RPSystem.Core.RpSystem;
+using RPSystem.Core.Services;
+using RPSystem.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.Storage;
 
-namespace ChemCalculationAndManagementApp.ViewModels;
+namespace RPSystem.ViewModels;
 
 public partial class RpSystemViewModel : ObservableObject
 {
     private const string PreviousDefaultRpModelId = "google/gemma-4-31B-turbo-TEE";
     private const string DefaultRpModelId = "Nemotron-3-Nano-Omni-30B-TEE";
     private const string DefaultRpModelName = "Nemotron 3 Nano Omni 30B TEE";
-    private static readonly List<Services.AiModel> CachedRpModels = [];
+    private static readonly List<AiModel> CachedRpModels = [];
     private static bool hasLoadedRpModelList;
     private readonly RpSimulationService _simulationService;
     private readonly AiModelService _modelService;
@@ -38,7 +39,7 @@ public partial class RpSystemViewModel : ObservableObject
     [ObservableProperty] private World world = RpWorldFactory.CreateStarterWorld();
     [ObservableProperty] private Character? selectedCharacter;
     [ObservableProperty] private Character? playerCharacter;
-    [ObservableProperty] private Services.AiModel? selectedModel;
+    [ObservableProperty] private AiModel? selectedModel;
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private bool useLlm = Preferences.Get("RpUseLlm", false);
     [ObservableProperty] private RpSliceMode sliceMode;
@@ -189,7 +190,7 @@ public partial class RpSystemViewModel : ObservableObject
     [ObservableProperty] private string moveModeKey = Preferences.Get("RpMoveModeKey", "M");
     [ObservableProperty] private int openSpaceLookDepth = Preferences.Get("RpOpenSpaceLookDepth", 5);
 
-    public ObservableCollection<Services.AiModel> AvailableModels { get; } = [];
+    public ObservableCollection<AiModel> AvailableModels { get; } = [];
     public ObservableCollection<Character> Characters { get; } = [];
     public ObservableCollection<string> EventLog { get; } = [];
     public ObservableCollection<Item> GroundItems { get; } = [];
@@ -3015,7 +3016,7 @@ public partial class RpSystemViewModel : ObservableObject
         ApplyModelList(CachedRpModels);
     }
 
-    private void ApplyModelList(IEnumerable<Services.AiModel> models)
+    private void ApplyModelList(IEnumerable<AiModel> models)
     {
         AvailableModels.Clear();
         foreach (var model in EnsureDefaultModel(models))
@@ -3034,7 +3035,7 @@ public partial class RpSystemViewModel : ObservableObject
         }
     }
 
-    private static List<Services.AiModel> EnsureDefaultModel(IEnumerable<Services.AiModel> models)
+    private static List<AiModel> EnsureDefaultModel(IEnumerable<AiModel> models)
     {
         var result = models
             .Where(model => !string.IsNullOrWhiteSpace(model.Id) || !string.IsNullOrWhiteSpace(model.Name))
@@ -3050,7 +3051,7 @@ public partial class RpSystemViewModel : ObservableObject
         return result;
     }
 
-    private static Services.AiModel CreateDefaultRpModel()
+    private static AiModel CreateDefaultRpModel()
         => new()
         {
             Id = DefaultRpModelId,
@@ -3058,10 +3059,10 @@ public partial class RpSystemViewModel : ObservableObject
             Provider = "Chutes"
         };
 
-    private static bool IsDefaultRpModel(Services.AiModel model)
+    private static bool IsDefaultRpModel(AiModel model)
         => ContainsDefaultRpModel(model.Id) || ContainsDefaultRpModel(model.Name);
 
-    private static bool IsPreviousDefaultRpModel(Services.AiModel model)
+    private static bool IsPreviousDefaultRpModel(AiModel model)
         => string.Equals(model.Id, PreviousDefaultRpModelId, StringComparison.OrdinalIgnoreCase) ||
             string.Equals(model.Name, PreviousDefaultRpModelId, StringComparison.OrdinalIgnoreCase);
 

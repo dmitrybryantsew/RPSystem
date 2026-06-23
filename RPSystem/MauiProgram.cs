@@ -1,12 +1,13 @@
 // MauiProgram.cs
 using CommunityToolkit.Maui;
-using ChemCalculationAndManagementApp.Services;
-using ChemCalculationAndManagementApp.ViewModels;
+using RPSystem.Services;
+using RPSystem.Core.Services;
+using RPSystem.ViewModels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 
-namespace ChemCalculationAndManagementApp
+namespace RPSystem
 {
     public static class MauiProgram
     {

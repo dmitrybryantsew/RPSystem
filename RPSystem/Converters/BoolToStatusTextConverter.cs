@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace ChemCalculationAndManagementApp.Converters
+namespace RPSystem.Converters
 {
     public class BoolToStatusTextConverter : IValueConverter
     {

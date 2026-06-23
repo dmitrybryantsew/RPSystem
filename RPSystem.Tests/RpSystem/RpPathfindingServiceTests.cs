@@ -1,9 +1,9 @@
-using ChemCalculationAndManagementApp.RpSystem;
-using ChemCalculationAndManagementApp.Services;
+using RPSystem.Core.RpSystem;
+using RPSystem.Core.Services;
 using FluentAssertions;
 using Xunit;
 
-namespace ChemCalculationAndManagementApp.Tests.RpSystem;
+namespace RPSystem.Tests.RpSystem;
 
 public class RpPathfindingServiceTests
 {
