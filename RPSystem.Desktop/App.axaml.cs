@@ -50,7 +50,19 @@ public partial class App : Application
         services.AddSingleton<RpWorldContextEditorService>();
         services.AddSingleton<RpJobService>();
 
-        // ViewModels
+        // ViewModels — registered in dependency order (leaves first)
+        services.AddSingleton<WorldSimulationViewModel>();
+        services.AddSingleton<PlayerControlViewModel>();
+        services.AddSingleton<WorldMapViewModel>();
+        services.AddSingleton<TestMapsViewModel>();
+        services.AddSingleton<ContextAbilityEditorViewModel>();
+        services.AddSingleton<RelationshipRuleEditorViewModel>();
+        services.AddSingleton<ContextCharacterEditorViewModel>();
+        services.AddSingleton<ContextModuleEditorViewModel>();
+        services.AddSingleton<FactionProfileEditorViewModel>();
+        services.AddSingleton<SpeciesTemplateEditorViewModel>();
+        services.AddSingleton<SceneEnvironmentContinuityEditorViewModel>();
+        services.AddSingleton<WorldContextEditorViewModel>();
         services.AddSingleton<MainShellViewModel>();
 
         var provider = services.BuildServiceProvider();

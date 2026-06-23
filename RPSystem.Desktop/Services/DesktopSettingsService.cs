@@ -137,6 +137,89 @@ public sealed partial class DesktopSettingsService : ObservableObject, ISettings
     partial void OnShowConversationTokenTotalChanged(bool value) => Save();
     partial void OnChatColorSchemeChanged(string value) => Save();
 
+    public bool GetBool(string key, bool fallback = false)
+    {
+        if (!File.Exists(_path)) return fallback;
+        try
+        {
+            var data = JsonSerializer.Deserialize<SettingsData>(File.ReadAllText(_path));
+            if (data is not null && data.CustomBooleans.TryGetValue(key, out var value))
+                return value;
+        }
+        catch { }
+        return fallback;
+    }
+
+    public void SetBool(string key, bool value)
+    {
+        EnsureLoaded();
+        var data = LoadData() ?? new SettingsData();
+        data.CustomBooleans[key] = value;
+        SaveData(data);
+    }
+
+    public int GetInt(string key, int fallback = 0)
+    {
+        if (!File.Exists(_path)) return fallback;
+        try
+        {
+            var data = JsonSerializer.Deserialize<SettingsData>(File.ReadAllText(_path));
+            if (data is not null && data.CustomIntegers.TryGetValue(key, out var value))
+                return value;
+        }
+        catch { }
+        return fallback;
+    }
+
+    public void SetInt(string key, int value)
+    {
+        EnsureLoaded();
+        var data = LoadData() ?? new SettingsData();
+        data.CustomIntegers[key] = value;
+        SaveData(data);
+    }
+
+    public string GetString(string key, string fallback = "")
+    {
+        if (!File.Exists(_path)) return fallback;
+        try
+        {
+            var data = JsonSerializer.Deserialize<SettingsData>(File.ReadAllText(_path));
+            if (data is not null && data.CustomStrings.TryGetValue(key, out var value))
+                return value;
+        }
+        catch { }
+        return fallback;
+    }
+
+    public void SetString(string key, string value)
+    {
+        EnsureLoaded();
+        var data = LoadData() ?? new SettingsData();
+        data.CustomStrings[key] = value;
+        SaveData(data);
+    }
+
+    private void EnsureLoaded()
+    {
+        if (!_isLoading)
+        {
+            Load();
+        }
+    }
+
+    private SettingsData? LoadData()
+    {
+        if (!File.Exists(_path)) return null;
+        return JsonSerializer.Deserialize<SettingsData>(File.ReadAllText(_path));
+    }
+
+    private void SaveData(SettingsData data)
+    {
+        Directory.CreateDirectory(AppPaths.AppDataDirectory);
+        File.WriteAllText(_path, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
     private sealed class SettingsData
     {
         public bool DebugEnabled { get; set; }
@@ -163,5 +246,10 @@ public sealed partial class DesktopSettingsService : ObservableObject, ISettings
         public string DefaultChatExportFormat { get; set; } = "json";
         public bool ShowConversationTokenTotal { get; set; }
         public string ChatColorScheme { get; set; } = "classic";
+
+        // Custom key-value stores for viewmodel preferences
+        public Dictionary<string, bool> CustomBooleans { get; set; } = new();
+        public Dictionary<string, int> CustomIntegers { get; set; } = new();
+        public Dictionary<string, string> CustomStrings { get; set; } = new();
     }
 }

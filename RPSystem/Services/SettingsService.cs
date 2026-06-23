@@ -245,5 +245,13 @@ namespace RPSystem.Services
 
             return SecureStorage.Default.SetAsync(storageKey, value.Trim());
         }
+
+        // ISettingsService typed accessors (delegate to MAUI Preferences)
+        public bool GetBool(string key, bool fallback = false) => Preferences.Get(key, fallback);
+        public void SetBool(string key, bool value) => Preferences.Set(key, value);
+        public int GetInt(string key, int fallback = 0) => Preferences.Get(key, fallback);
+        public void SetInt(string key, int value) => Preferences.Set(key, value);
+        public string GetString(string key, string fallback = "") => Preferences.Get(key, fallback);
+        public void SetString(string key, string value) => Preferences.Set(key, value);
     }
 }

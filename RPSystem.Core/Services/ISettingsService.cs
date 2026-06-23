@@ -30,5 +30,13 @@ namespace RPSystem.Core.Services
         string DefaultChatExportFormat { get; set; }
         bool ShowConversationTokenTotal { get; set; }
         string ChatColorScheme { get; set; }
+
+        // Typed accessor methods (used by viewmodels to replace Preferences.*)
+        bool GetBool(string key, bool fallback = false);
+        void SetBool(string key, bool value);
+        int GetInt(string key, int fallback = 0);
+        void SetInt(string key, int value);
+        string GetString(string key, string fallback = "");
+        void SetString(string key, string value);
     }
 }

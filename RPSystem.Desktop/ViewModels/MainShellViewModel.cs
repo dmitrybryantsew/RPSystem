@@ -4,6 +4,9 @@ using RPSystem.Core.RpSystem;
 
 namespace RPSystem.Desktop.ViewModels;
 
+/// <summary>
+/// Top-level root viewmodel for the main window. Composes all child viewmodels.
+/// </summary>
 public sealed partial class MainShellViewModel : ObservableObject
 {
     [ObservableProperty] private RpViewMode _activeRpViewMode = RpViewMode.World;
@@ -15,6 +18,37 @@ public sealed partial class MainShellViewModel : ObservableObject
     public bool IsGameOptionsView => ActiveRpViewMode == RpViewMode.GameOptions;
     public bool IsDevMenuView => ActiveRpViewMode == RpViewMode.DevMenu;
     public bool IsTestMapsView => ActiveRpViewMode == RpViewMode.TestMaps;
+
+    public string ActiveViewText => ActiveRpViewMode switch
+    {
+        RpViewMode.MainMenu => "Main Menu",
+        RpViewMode.Settings => "Settings",
+        RpViewMode.WorldContext => "World Context",
+        RpViewMode.GameOptions => "Game Options",
+        RpViewMode.DevMenu => "Developer Menu",
+        RpViewMode.TestMaps => "Test Maps",
+        _ => "World"
+    };
+
+    public WorldSimulationViewModel Simulation { get; }
+    public PlayerControlViewModel Player { get; }
+    public WorldMapViewModel Map { get; }
+    public TestMapsViewModel TestMaps { get; }
+    public WorldContextEditorViewModel WorldContextEditor { get; }
+
+    public MainShellViewModel(
+        WorldSimulationViewModel simulation,
+        PlayerControlViewModel player,
+        WorldMapViewModel map,
+        TestMapsViewModel testMaps,
+        WorldContextEditorViewModel worldContextEditor)
+    {
+        Simulation = simulation;
+        Player = player;
+        Map = map;
+        TestMaps = testMaps;
+        WorldContextEditor = worldContextEditor;
+    }
 
     [RelayCommand] private void ShowMainMenu() => ActiveRpViewMode = RpViewMode.MainMenu;
     [RelayCommand] private void ShowWorldView() => ActiveRpViewMode = RpViewMode.World;
@@ -33,5 +67,6 @@ public sealed partial class MainShellViewModel : ObservableObject
         OnPropertyChanged(nameof(IsGameOptionsView));
         OnPropertyChanged(nameof(IsDevMenuView));
         OnPropertyChanged(nameof(IsTestMapsView));
+        OnPropertyChanged(nameof(ActiveViewText));
     }
 }
