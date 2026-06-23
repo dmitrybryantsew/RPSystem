@@ -56,106 +56,33 @@ public partial class RpSystemPage : ContentPage
     private void OnWorldCanvasPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
-        canvas.Clear(new SKColor(250, 251, 252));
-
         if (BindingContext is not RpSystemViewModel vm)
         {
+            canvas.Clear(new SKColor(250, 251, 252));
             return;
         }
-
-        using var textPaint = new SKPaint
-        {
-            Color = new SKColor(25, 35, 45),
-            IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Bold)
-        };
-        using var tilePaint = new SKPaint { IsAntialias = false };
-        using var borderPaint = new SKPaint
-        {
-            Color = new SKColor(207, 216, 224),
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1
-        };
-        using var hoverPaint = new SKPaint
-        {
-            Color = new SKColor(255, 193, 7, 90),
-            Style = SKPaintStyle.Fill,
-            IsAntialias = false
-        };
-        using var hoverBorderPaint = new SKPaint
-        {
-            Color = new SKColor(255, 193, 7),
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 3,
-            IsAntialias = false
-        };
 
         var snapshot = vm.GetMapRenderSnapshot();
-        if (!snapshot.HasCells)
-        {
-            DrawCenteredText(canvas, e.Info.Width, e.Info.Height, "No tiles in this slice", textPaint);
-            return;
-        }
-
         _lastRenderSnapshot = snapshot;
-
-        var contentRect = new SKRect(8, 8, e.Info.Width - 8, Math.Max(40, e.Info.Height - 34));
-        _lastContentRect = contentRect;
-
-        var cols = Math.Max(1, snapshot.MaxA - snapshot.MinA + 1);
-        var rows = Math.Max(1, snapshot.MaxB - snapshot.MinB + 1);
-        var tileSize = MathF.Round(26f * _zoom);
-        var boardWidth = cols * tileSize;
-        var boardHeight = rows * tileSize;
-        var startX = contentRect.MidX - (boardWidth / 2f) + _panX;
-        var startY = contentRect.MidY - (boardHeight / 2f) + _panY;
-        _lastBoardRect = new SKRect(startX, startY, startX + boardWidth, startY + boardHeight);
-        _lastTileSize = tileSize;
+        _lastContentRect = new SKRect(8, 8, e.Info.Width - 8, Math.Max(40, e.Info.Height - 34));
+        _lastTileSize = MathF.Round(26f * _zoom);
         _lastMinA = snapshot.MinA;
         _lastMaxB = snapshot.MaxB;
-        textPaint.TextSize = Math.Clamp(tileSize * 0.48f, 10, 24);
 
-        canvas.Save();
-        canvas.ClipRect(contentRect);
-        foreach (var cell in snapshot.Cells)
+        if (snapshot.HasCells)
         {
-            var col = cell.A - snapshot.MinA;
-            var row = snapshot.MaxB - cell.B;
-            var rect = new SKRect(
-                startX + col * tileSize,
-                startY + row * tileSize,
-                startX + (col + 1) * tileSize,
-                startY + (row + 1) * tileSize);
-
-            if (!rect.IntersectsWith(contentRect))
-            {
-                continue;
-            }
-
-            tilePaint.Color = ColorForCell(cell);
-            tilePaint.Style = SKPaintStyle.Fill;
-            canvas.DrawRect(rect, tilePaint);
-            canvas.DrawRect(rect, borderPaint);
-
-            if (_hoveredPosition.HasValue && _hoveredPosition.Value == cell.Position)
-            {
-                canvas.DrawRect(rect, hoverPaint);
-                canvas.DrawRect(rect, hoverBorderPaint);
-            }
-
-            var displayGlyph = cell.IsOpenSpace ? cell.UnderlayGlyph : cell.Glyph;
-            if (!string.IsNullOrWhiteSpace(displayGlyph))
-            {
-                textPaint.Color = cell.IsOpenSpace
-                    ? OpenSpaceGlyphColor(cell)
-                    : displayGlyph is "#" ? SKColors.White : new SKColor(23, 32, 42);
-                canvas.DrawText(displayGlyph, rect.MidX, rect.MidY - ((textPaint.FontMetrics.Ascent + textPaint.FontMetrics.Descent) / 2), textPaint);
-            }
+            var cols = Math.Max(1, snapshot.MaxA - snapshot.MinA + 1);
+            var rows = Math.Max(1, snapshot.MaxB - snapshot.MinB + 1);
+            var boardWidth = cols * _lastTileSize;
+            var boardHeight = rows * _lastTileSize;
+            _lastBoardRect = new SKRect(
+                _lastContentRect.MidX - (boardWidth / 2f) + _panX,
+                _lastContentRect.MidY - (boardHeight / 2f) + _panY,
+                _lastContentRect.MidX + (boardWidth / 2f) + _panX,
+                _lastContentRect.MidY + (boardHeight / 2f) + _panY);
         }
-        canvas.Restore();
 
-        DrawLegend(canvas, e.Info.Width, e.Info.Height, vm, textPaint);
+        MapRenderer.DrawWorld(canvas, e.Info, snapshot, _hoveredPosition, _zoom, _panX, _panY, vm.SliceModeText);
     }
 
     private void OnWorldCanvasTouch(object sender, SKTouchEventArgs e)
@@ -288,81 +215,6 @@ public partial class RpSystemPage : ContentPage
         _panX = -characterXFromBoardCenter;
         _panY = -characterYFromBoardCenter;
     }
-
-    private static void DrawCenteredText(SKCanvas canvas, int width, int height, string text, SKPaint paint)
-    {
-        paint.TextSize = 18;
-        paint.Color = new SKColor(93, 109, 126);
-        canvas.DrawText(text, width / 2f, height / 2f, paint);
-    }
-
-    private static void DrawLegend(SKCanvas canvas, int width, int height, RpSystemViewModel vm, SKPaint paint)
-    {
-        using var backgroundPaint = new SKPaint { Color = new SKColor(250, 251, 252, 235), Style = SKPaintStyle.Fill };
-        canvas.DrawRect(new SKRect(0, height - 30, width, height), backgroundPaint);
-        paint.TextSize = 13;
-        paint.Color = new SKColor(86, 101, 115);
-        paint.TextAlign = SKTextAlign.Left;
-        canvas.DrawText("# wall  . floor  , moss  + glass  dim/darker below = open space  ? below cutoff  ▲ ramp  H ladder  * item  letters chars", 10, height - 11, paint);
-        paint.TextAlign = SKTextAlign.Right;
-        canvas.DrawText(vm.SliceModeText, width - 10, height - 11, paint);
-        paint.TextAlign = SKTextAlign.Center;
-    }
-
-    private static SKColor ColorForCell(RpMapRenderCell cell)
-    {
-        if (cell.IsOpenSpace)
-        {
-            var shade = OpenSpaceShade(cell);
-            return new SKColor(shade, (byte)Math.Clamp(shade + 2, 0, 255), (byte)Math.Clamp(shade + 5, 0, 255));
-        }
-
-        return ColorForGlyph(cell.Glyph);
-    }
-
-    private static SKColor OpenSpaceGlyphColor(RpMapRenderCell cell)
-    {
-        if (cell.IsUnderlayClipped)
-        {
-            return new SKColor(72, 84, 96, 190);
-        }
-
-        var depth = Math.Clamp(cell.UnderlayDepth, 1, 12);
-        var channel = (byte)Math.Clamp(145 - (depth * 11), 55, 145);
-        var alpha = (byte)Math.Clamp(180 - (depth * 8), 80, 180);
-        return new SKColor(channel, (byte)Math.Clamp(channel + 8, 0, 255), (byte)Math.Clamp(channel + 16, 0, 255), alpha);
-    }
-
-    private static byte OpenSpaceShade(RpMapRenderCell cell)
-    {
-        if (cell.IsUnderlayClipped)
-        {
-            return 211;
-        }
-
-        if (cell.UnderlayDepth <= 0)
-        {
-            return 239;
-        }
-
-        return (byte)Math.Clamp(242 - (cell.UnderlayDepth * 9), 178, 242);
-    }
-
-    private static SKColor ColorForGlyph(string glyph)
-        => glyph switch
-        {
-            "#" => new SKColor(72, 84, 96),
-            "+" => new SKColor(188, 232, 241),
-            "▲" => new SKColor(184, 134, 68),
-            "▼" => new SKColor(206, 158, 91),
-            "H" => new SKColor(169, 117, 74),
-            "," => new SKColor(186, 213, 162),
-            "." => new SKColor(224, 232, 215),
-            "~" => new SKColor(94, 151, 191),
-            "*" => new SKColor(242, 201, 109),
-            " " => new SKColor(238, 241, 244),
-            _ => new SKColor(245, 176, 65)
-        };
 
 #if WINDOWS
     private void AttachWindowsKeyboardHandling()
