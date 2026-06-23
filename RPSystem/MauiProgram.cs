@@ -34,14 +34,14 @@ namespace ChemCalculationAndManagementApp
             // --- 2. LLM / MODEL SERVICES ---
             builder.Services.AddSingleton<OpenRouterService>(sp =>
             {
-                var handler = GetInsecureHandler();
+                var handler = CreateHttpHandler();
                 var httpClient = new HttpClient(handler);
                 var settings = sp.GetRequiredService<ISettingsService>();
                 return new OpenRouterService(httpClient, settings);
             });
 
             builder.Services.AddHttpClient<AiModelService>()
-                .ConfigurePrimaryHttpMessageHandler(GetInsecureHandler);
+                .ConfigurePrimaryHttpMessageHandler(CreateHttpHandler);
 
             // --- 3. RP SERVICES (instance-based only — factory classes are static) ---
             builder.Services.AddSingleton<IRpLlmClient, RpLlmClient>();
@@ -76,19 +76,28 @@ namespace ChemCalculationAndManagementApp
             builder.Services.AddTransient<RpSystemPage>();
             builder.Services.AddTransient<RpSystemViewModel>();
 
-            return builder.Build();
+            var app = builder.Build();
+
+            // --- 5. WIRE DEBUG LOGGING GATE ---
+            var settings = app.Services.GetRequiredService<SettingsService>();
+            RpSimulationService.DebugLoggingEnabled = settings.DebugEnabled;
+            settings.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(SettingsService.DebugEnabled))
+                {
+                    RpSimulationService.DebugLoggingEnabled = settings.DebugEnabled;
+                }
+            };
+
+            return app;
         }
 
-        private static HttpMessageHandler GetInsecureHandler()
+        private static HttpMessageHandler CreateHttpHandler()
         {
 #if ANDROID
-            var handler = new Xamarin.Android.Net.AndroidMessageHandler();
-            handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
-            return handler;
+            return new Xamarin.Android.Net.AndroidMessageHandler();
 #else
-            var handler = new HttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
-            return handler;
+            return new HttpClientHandler();
 #endif
         }
     }

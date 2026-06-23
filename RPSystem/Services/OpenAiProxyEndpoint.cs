@@ -4,14 +4,15 @@ namespace ChemCalculationAndManagementApp.Services
 {
     public static class OpenAiProxyEndpoint
     {
-        public const string DefaultBaseUrl = "http://obsidianvault.duckdns.org:3000/v1";
+        public const string DefaultBaseUrl = "";
 
         public static string BuildUrl(string? configuredBaseUrl, string path)
         {
             var baseUrl = (configuredBaseUrl ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(baseUrl))
             {
-                baseUrl = DefaultBaseUrl;
+                throw new InvalidOperationException(
+                    "OpenAI-compatible proxy base URL is not configured. Set it in Settings.");
             }
 
             baseUrl = baseUrl.TrimEnd('/');

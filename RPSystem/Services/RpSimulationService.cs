@@ -1824,17 +1824,43 @@ public sealed class RpSimulationService
             ? value
             : value[..maxChars].TrimEnd() + "...";
 
+    /// <summary>
+    /// Set once by the host application at startup (wired to the user's
+    /// Debug setting). Defaults to false so logging is opt-in.
+    /// </summary>
+    public static bool DebugLoggingEnabled { get; set; }
+
+    private const long MaxDebugLogBytes = 5 * 1024 * 1024; // 5 MB
+
     public static void AppendDebugLog(string message)
     {
+        if (!DebugLoggingEnabled)
+        {
+            return;
+        }
+
         try
         {
             Directory.CreateDirectory(FileSystem.AppDataDirectory);
+            RotateIfTooLarge();
             File.AppendAllText(DebugLogPath, $"[{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz}] {message}{Environment.NewLine}");
         }
         catch
         {
             // Debug logging must not break simulation turns.
         }
+    }
+
+    private static void RotateIfTooLarge()
+    {
+        var info = new FileInfo(DebugLogPath);
+        if (!info.Exists || info.Length <= MaxDebugLogBytes)
+        {
+            return;
+        }
+
+        var rotatedPath = DebugLogPath + ".old";
+        File.Move(DebugLogPath, rotatedPath, overwrite: true);
     }
 
     private static string Truncate(string? value, int maxChars)
