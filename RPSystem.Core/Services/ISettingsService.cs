@@ -14,8 +14,6 @@ namespace RPSystem.Core.Services
         string ZaiApiKey { get; set; }
         bool ZaiSubscriptionMode { get; set; }
         string ChutesApiKey { get; set; }
-        int PhotoQuality { get; set; }
-        int MaxResolution { get; set; }
         bool CompactModelNames { get; set; }
         bool HideModelsOlderThanMaxAge { get; set; }
         int ModelMaxAgeDays { get; set; }

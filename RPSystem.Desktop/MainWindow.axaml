@@ -1,0 +1,6 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="RPSystem.Desktop.MainWindow"
+        Title="RPSystem" Width="1280" Height="800">
+  <TextBlock Text="RPSystem Desktop — Phase 04 Shell" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="24" />
+</Window>
