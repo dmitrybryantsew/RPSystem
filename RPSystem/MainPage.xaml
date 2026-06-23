@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:ChemCalculationAndManagementApp"
+             x:Class="ChemCalculationAndManagementApp.MainPage"
+             Title="RPSystem">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+
+            <Label Text="RPSystem"
+                   FontSize="32"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center" />
+
+            <Label Text="Standalone RP system with LLM-driven characters."
+                   FontSize="14"
+                   HorizontalOptions="Center"
+                   Margin="0,0,0,16" />
+
+            <Button Text="Open RP System"
+                    FontSize="18"
+                    HeightRequest="56"
+                    Clicked="OnOpenRpSystemClicked" />
+
+            <Button Text="Settings (LLM provider, API key, model)"
+                    FontSize="14"
+                    HeightRequest="44"
+                    Clicked="OnOpenSettingsClicked" />
+
+            <Label Text="Configure your LLM provider/API key in Settings before running the RP system."
+                   FontSize="12"
+                   TextColor="Gray"
+                   HorizontalOptions="Center"
+                   Margin="0,16,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

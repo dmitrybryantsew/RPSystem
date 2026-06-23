@@ -1,0 +1,42 @@
+## .NET
+bin/
+obj/
+packages/
+*.user
+*.userosscache
+*.suo
+*.cache
+*.ilk
+*.pdb
+*.log
+
+# IDE / Editor
+.vs/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build / Publish
+[Rr]elease/
+Dd[ebug/
+x64/
+x86/
+arm64/
+arm/
+app/
+publish/
+artifacts/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Aidocs - AI planning documentation
+aidocs/
+
+# Sensitive
+*.secrets
+appsettings.Development.json
