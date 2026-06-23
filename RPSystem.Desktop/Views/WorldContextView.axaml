@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RPSystem.Desktop.ViewModels"
+             x:Class="RPSystem.Desktop.Views.WorldContextView"
+             x:DataType="vm:MainShellViewModel">
+  <ScrollViewer>
+    <StackPanel Spacing="12" Margin="4">
+      <TextBlock Text="World Context" FontSize="18" FontWeight="Bold" />
+      <TextBlock Text="World context editor (full version in Phase 07)" Foreground="Gray" />
+      <Button Content="Back To Menu" Command="{Binding ShowMainMenuCommand}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

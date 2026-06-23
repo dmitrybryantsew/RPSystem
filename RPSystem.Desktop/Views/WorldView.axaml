@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:RPSystem.Desktop.Controls"
+             xmlns:vm="using:RPSystem.Desktop.ViewModels"
+             x:Class="RPSystem.Desktop.Views.WorldView"
+             x:DataType="vm:MainShellViewModel">
+  <Grid RowDefinitions="Auto,*">
+    <!-- Toolbar -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6">
+      <Button Content="Menu" Command="{Binding ShowMainMenuCommand}" />
+      <Button Content="World" Command="{Binding ShowWorldViewCommand}" />
+      <Button Content="Game" Command="{Binding ShowGameOptionsViewCommand}" />
+      <Button Content="Dev" Command="{Binding ShowDevMenuCommand}" />
+      <Button Content="Settings" Command="{Binding ShowSettingsViewCommand}" />
+      <Button Content="Context" Command="{Binding ShowWorldContextViewCommand}" />
+    </StackPanel>
+
+    <!-- Map + Inspector -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,330">
+      <Border Grid.Column="0" BorderBrush="#CCD3DB" BorderThickness="1" Background="White">
+        <controls:WorldMapCanvas x:Name="WorldCanvas" />
+      </Border>
+      <Border Grid.Column="1" BorderBrush="#CCD3DB" BorderThickness="1" Background="#F8FAFC">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Inspector" FontWeight="Bold" FontSize="16" />
+          <TextBlock Text="Character inspector panel" Foreground="Gray" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

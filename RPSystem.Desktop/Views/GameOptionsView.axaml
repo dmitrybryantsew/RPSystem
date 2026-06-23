@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RPSystem.Desktop.ViewModels"
+             x:Class="RPSystem.Desktop.Views.GameOptionsView"
+             x:DataType="vm:MainShellViewModel">
+  <ScrollViewer>
+    <StackPanel Spacing="14" Margin="12" MaxWidth="560" HorizontalAlignment="Center">
+      <TextBlock Text="Game Options" FontSize="22" FontWeight="Bold" />
+      <TextBlock Text="Game options panel (full version in Phase 07)" Foreground="Gray" />
+      <Button Content="Back To Menu" Command="{Binding ShowMainMenuCommand}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

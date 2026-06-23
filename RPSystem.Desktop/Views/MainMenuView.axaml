@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RPSystem.Desktop.ViewModels"
+             x:Class="RPSystem.Desktop.Views.MainMenuView"
+             x:DataType="vm:MainShellViewModel">
+  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16" Margin="24">
+    <TextBlock Text="RPSystem" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" />
+    <TextBlock Text="Standalone RP system with LLM-driven characters." FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,16" />
+    <Button Content="Continue Current World" Command="{Binding ShowWorldViewCommand}" FontSize="18" Height="56" HorizontalAlignment="Stretch" />
+    <Button Content="Game Options" Command="{Binding ShowGameOptionsViewCommand}" FontSize="14" Height="44" HorizontalAlignment="Stretch" />
+    <Button Content="Developer Menu" Command="{Binding ShowDevMenuCommand}" FontSize="14" Height="44" HorizontalAlignment="Stretch" />
+    <Button Content="World Context Editor" Command="{Binding ShowWorldContextViewCommand}" FontSize="14" Height="44" HorizontalAlignment="Stretch" />
+    <TextBlock Text="Configure your LLM provider/API key in Settings before running the RP system." FontSize="12" Foreground="Gray" HorizontalAlignment="Center" Margin="0,16,0,0" />
+  </StackPanel>
+</UserControl>

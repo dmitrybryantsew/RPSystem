@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RPSystem.Desktop.ViewModels"
+             x:Class="RPSystem.Desktop.Views.SettingsView"
+             x:DataType="vm:MainShellViewModel">
+  <Grid RowDefinitions="Auto,*">
+    <!-- Tab Buttons -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
+      <Button Content="General" />
+      <Button Content="Camera" />
+      <Button Content="AI" />
+      <Button Content="Integrations" />
+    </StackPanel>
+
+    <!-- General Tab -->
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="20" Margin="0,12,0,0">
+        <Border Background="#F5F5F5" Padding="15" CornerRadius="10">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Debug Settings" FontSize="18" FontWeight="Bold" />
+            <TextBlock Text="Settings panel (full version in Phase 07)" Foreground="Gray" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>
