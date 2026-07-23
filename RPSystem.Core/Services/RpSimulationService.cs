@@ -29,7 +29,7 @@ public sealed class RpLlmClient : IRpLlmClient
         RpSimulationService.AppendDebugLog(
             $"LLM request for {snapshot.FocalCharacter.Name} | provider={provider} | model={model} | apiKeyPresent={!string.IsNullOrWhiteSpace(apiKey)} | apiKeyLength={apiKey?.Length ?? 0}");
         RpSimulationService.AppendDebugLog(
-            $"Snapshot summary | world={snapshot.WorldName} | date={snapshot.CurrentDate} | activeContexts={snapshot.ActiveWorldContexts.Count} | focalProfiles={snapshot.FocalContextProfiles.Count} | focalSpecies={snapshot.FocalSpeciesTemplates.Count} | focalFactions={snapshot.FocalFactionProfiles.Count} | focalRelationships={snapshot.FocalRelationshipRules.Count} | nearbyTiles={snapshot.NearbyTiles.Count} | nearbyChars={snapshot.NearbyChars.Count} | availableActions={snapshot.AvailableActions.Count}");
+            $"Snapshot summary | world={snapshot.WorldName} | date={snapshot.CurrentDate} | activeContexts={snapshot.ActiveWorldContexts.Count} | focalProfiles={snapshot.FocalContextProfiles.Count} | focalSpecies={snapshot.FocalSpeciesTemplates.Count} | focalFactions={snapshot.FocalFactionProfiles.Count} | focalRelationships={snapshot.FocalRelationshipRules.Count} | nearbyTiles={snapshot.NearbyTiles.Count} | nearbyChars={snapshot.NearbyChars.Count} | availableActions={snapshot.AvailableActions.Count} | recentMemorySummaries={snapshot.RecentMemorySummaries.Count} | historyDigestEntries={snapshot.HistoryDigest.Count}");
         foreach (var profile in snapshot.FocalContextProfiles)
         {
             RpSimulationService.AppendDebugLog(
@@ -91,6 +91,10 @@ public sealed class RpLlmClient : IRpLlmClient
             "When focalSpeciesTemplates are present, apply their body language, vocalization, diet, energy, magic, anatomy, and species tag rules to the acting character. " +
             "When focalFactionProfiles are present, apply their faction identity, culture, hierarchy, role/caste, appearance, anatomy override, faction ability, faction resource, outsider/member behavior, and faction relationship rules. Character profile overrides faction role; faction role overrides faction profile; faction profile overrides species template. " +
             "When focalRelationshipRules or nearbyChars relationship fields are present, apply those trust, fear, loyalty, dependency, manipulation, suspicion, known secret, and handling rules to choices and dialogue. " +
+            "Treat recentMemorySummaries and historyDigest as compressed background memory: " +
+            "they summarize things that already happened but are no longer shown in full detail. " +
+            "Do not contradict them, and do not treat their absence of detail as permission to invent " +
+            "new facts about what happened during those periods. " +
             "Return only JSON with this schema: {\"note\":\"one short sentence explaining the chosen move\",\"speech\":null|\"dialogue\",\"actions\":[{\"type\":\"Move|Attack|Interact|Speak|Wait|Use\",\"targetPos\":{\"x\":0,\"y\":0,\"z\":0}|null,\"targetId\":null,\"payload\":null,\"tickCost\":1,\"note\":\"optional short reason\"}]}. " +
             "Choose only actions listed in availableActions and copy the action object shape exactly, changing only payload text for Speak/Use if needed. " +
             "Prefer a concrete world action such as Move, Speak, or Interact when one is available. Choose Wait only when every other action is clearly useless.";
@@ -221,6 +225,14 @@ public sealed class RpSimulationService
 
         UpdatePerception(world);
         AppendEventsToPerceivedLogs(world, events);
+
+        var memoryService = new RpMemoryCompactionService(new RpRuleBasedTextSummarizer());
+        foreach (var character in world.Characters.Values)
+        {
+            memoryService.CompactCharacterMemory(character);
+        }
+        memoryService.RecordAndMaybeCompactWorldHistory(world, events);
+
         AppendDebugLog($"Tick end | tick={world.Clock.TickCount} | events={events.Count}");
         return events;
     }
@@ -437,7 +449,10 @@ public sealed class RpSimulationService
                 .ToList(),
             AvailableActions = BuildAvailableActions(world, focal),
             ActiveSceneState = activeContext?.SceneState,
-            ActiveContinuity = activeContext?.Continuity
+            ActiveContinuity = activeContext?.Continuity,
+            RecentMemorySummaries = focal.MemorySummaries.TakeLast(5).ToList(),
+            HistoryDigest = world.History.TakeLast(5).Select(h => h.Summary ?? string.Empty)
+                .Where(s => !string.IsNullOrWhiteSpace(s)).ToList()
         };
     }
 
@@ -1818,10 +1833,8 @@ public sealed class RpSimulationService
         foreach (var character in world.Characters.Values)
         {
             character.PerceivedLog.AddRange(events);
-            if (character.PerceivedLog.Count > MaxPerceivedLogSize)
-            {
-                character.PerceivedLog = character.PerceivedLog.TakeLast(MaxPerceivedLogSize).ToList();
-            }
+            // Trimming/summarization now handled by RpMemoryCompactionService.CompactCharacterMemory,
+            // called right after this method in TickAsync. Do not re-add a hard trim here.
         }
     }
 

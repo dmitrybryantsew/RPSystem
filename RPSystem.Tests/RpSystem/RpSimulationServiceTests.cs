@@ -141,4 +141,56 @@ public class RpSimulationServiceTests
         snapshot.ActiveContinuity.Should().NotBeNull();
         snapshot.ActiveContinuity!.Flags.Should().Contain("test-flag");
     }
+
+    [Fact]
+    public async Task TickAsync_TrimsPerceivedLogOnlyThroughMemoryCompaction()
+    {
+        var world = RpTestWorldBuilder.CreateMinimalWorld();
+        var player = world.Characters.Values.First(c => c.Name == "Test Player");
+        var npc = world.Characters.Values.First(c => c.Name == "Test Changeling");
+        for (var i = 0; i < 30; i++)
+        {
+            npc.PerceivedLog.Add(new NarrativeEvent
+            {
+                Tick = i,
+                ActorName = "Seeder",
+                Description = $"event {i}"
+            });
+        }
+        var fake = new RpFakeLlmClient();
+        fake.Enqueue(new LlmActionResponse
+        {
+            Note = "wait",
+            Actions = [new CharacterAction { Type = ActionType.Wait, TickCost = 1 }]
+        });
+        var service = new RpSimulationService(fake);
+
+        await service.TickAsync(world, useLlm: true, provider: "fake", apiKey: "key", model: "model", player.Id, CancellationToken.None);
+
+        npc.PerceivedLog.Count.Should().BeLessThanOrEqualTo(RpMemoryCompactionService.RawPerceivedLogCap);
+        npc.MemorySummaries.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void BuildSnapshot_IncludesRecentMemorySummariesAndHistoryDigest()
+    {
+        var world = RpTestWorldBuilder.CreateMinimalWorld();
+        var npc = world.Characters.Values.First(c => c.Name == "Test Changeling");
+        npc.MemorySummaries.AddRange(["m1", "m2", "m3", "m4", "m5", "m6", "m7"]);
+        world.History.Add(new HistoryYear { Year = 1, Summary = "epoch one summary" });
+        world.History.Add(new HistoryYear { Year = 2, Summary = "epoch two summary" });
+        world.History.Add(new HistoryYear { Year = 3, Summary = string.Empty });
+        world.History.Add(new HistoryYear { Year = 4, Summary = "epoch four summary" });
+        world.History.Add(new HistoryYear { Year = 5, Summary = "epoch five summary" });
+        world.History.Add(new HistoryYear { Year = 6, Summary = "epoch six summary" });
+
+        var service = new RpSimulationService(new RpFakeLlmClient());
+        var snapshot = service.BuildSnapshot(world, npc);
+
+        snapshot.RecentMemorySummaries.Should().HaveCount(5);
+        snapshot.RecentMemorySummaries.Should().Equal(["m3", "m4", "m5", "m6", "m7"]);
+        snapshot.HistoryDigest.Should().HaveCount(4);
+        snapshot.HistoryDigest.Should().Equal(["epoch two summary", "epoch four summary", "epoch five summary", "epoch six summary"]);
+        snapshot.HistoryDigest.Should().NotContain(s => string.IsNullOrWhiteSpace(s));
+    }
 }

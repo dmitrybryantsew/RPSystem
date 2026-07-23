@@ -120,6 +120,22 @@ public sealed class World
     /// Code that mutates tile shape MUST increment this.
     /// </summary>
     public int TerrainVersion { get; set; }
+
+    /// <summary>
+    /// Every NarrativeEvent produced by every tick, world-wide, awaiting
+    /// long-term compaction into World.History. Bounded by
+    /// RpMemoryCompactionService.MaxRawGlobalEventLog — once that many events
+    /// accumulate, the oldest are compacted into a HistoryYear entry even if
+    /// the normal tick-count interval hasn't been reached yet, so this can
+    /// never grow unbounded even under very fast ticking.
+    /// </summary>
+    public List<NarrativeEvent> GlobalEventLog { get; set; } = [];
+
+    /// <summary>
+    /// TickCount at which GlobalEventLog was last compacted into World.History.
+    /// Used by RpMemoryCompactionService to decide when the next compaction is due.
+    /// </summary>
+    public long LastHistoryCompactionTick { get; set; }
 }
 
 public sealed class RpWorldContextEntry
@@ -453,6 +469,15 @@ public sealed class Character
     public PerceivedWorldState PerceivedState { get; set; } = new();
 
     /// <summary>
+    /// Compressed short-term memory. Populated by RpMemoryCompactionService when
+    /// PerceivedLog overflows its raw cap. Each entry is a summary of a batch of
+    /// events that were removed from PerceivedLog, oldest batch first. Never
+    /// truncated by tick-level code directly — only RpMemoryCompactionService
+    /// manages its size (see MaxMemorySummaries).
+    /// </summary>
+    public List<string> MemorySummaries { get; set; } = [];
+
+    /// <summary>
     /// Higher values act earlier within a tick. Defaults to 0 for everyone
     /// (today's behavior is unaffected beyond the tiebreak), but gives future
     /// initiative/speed systems a place to plug in without changing TickAsync.
@@ -667,6 +692,15 @@ public sealed class LlmSnapshot
     public RpSceneState? ActiveSceneState { get; set; }
     /// <summary>Null if GetActiveSceneContext(world) returned null.</summary>
     public RpContinuityState? ActiveContinuity { get; set; }
+
+    // --- NEW for Phase 2 ---
+    /// <summary>Most recent compressed memory summaries for the focal character,
+    /// oldest-relevant-first, capped to a handful of entries so this stays cheap.</summary>
+    public List<string> RecentMemorySummaries { get; set; } = [];
+
+    /// <summary>Compact digest of long-term world history, one string per
+    /// compacted epoch, most recent last.</summary>
+    public List<string> HistoryDigest { get; set; } = [];
 }
 
 public sealed class RpAvailableAction
