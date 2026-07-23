@@ -317,6 +317,78 @@ public sealed class RpContinuityState
     public List<string> PendingConsequences { get; set; } = [];
 }
 
+/// <summary>
+/// A single proposed change to the focal character's relationship with another
+/// character. Deltas are relative (added to current value), not absolute —
+/// this prevents the model from claiming a relationship state it doesn't know
+/// the true current value of.
+/// </summary>
+public sealed class RpRelationshipDelta
+{
+    /// <summary>Must match a character Name or Guid (as string) that is currently
+    /// visible to the focal character, or a character already present in
+    /// focal.KnownCharacters. Deltas targeting anyone else are dropped.</summary>
+    public string TargetNameOrId { get; set; } = string.Empty;
+    public int TrustChange { get; set; }
+    public int FearChange { get; set; }
+    public int DependencyChange { get; set; }
+    public int LoyaltyChange { get; set; }
+    public int ManipulationChange { get; set; }
+    public int SuspicionChange { get; set; }
+    /// <summary>Optional — if set, overwrites the relationship Type outright
+    /// (e.g. Unknown -> Ally). Type changes are not clamped, but see
+    /// RpConsistencyArbiterService for the one guard rail that applies.</summary>
+    public RpRelationshipType? NewType { get; set; }
+    /// <summary>Free-text reason, echoed into the narrative event log for
+    /// debugging/inspection. Not shown to other characters.</summary>
+    public string? Reason { get; set; }
+}
+
+/// <summary>A secret the focal character learned about another character during
+/// this exchange. Distinct from RelationshipDelta because secrets are additive
+/// and never clamped/decayed.</summary>
+public sealed class RpSecretDisclosure
+{
+    public string TargetNameOrId { get; set; } = string.Empty;
+    public string Secret { get; set; } = string.Empty;
+}
+
+/// <summary>Structured continuity changes proposed for this tick. Every field is
+/// optional; only non-null/non-empty fields are applied. Each "Add*" field adds
+/// one string entry to the corresponding list on RpContinuityState.</summary>
+public sealed class RpContinuityUpdate
+{
+    public string? AddPersistentPhysicalChange { get; set; }
+    public string? AddEmotionalStateChange { get; set; }
+    public string? AddRelationshipChangeNote { get; set; }
+    public string? AddFlag { get; set; }
+    public string? AddTrigger { get; set; }
+    public string? AddIrreversibleEvent { get; set; }
+    public string? AddPendingConsequence { get; set; }
+    /// <summary>Exact string match against an existing entry in
+    /// RpContinuityState.PendingConsequences to remove (the consequence has now
+    /// happened / been resolved). No-op if not found.</summary>
+    public string? ResolvePendingConsequence { get; set; }
+}
+
+/// <summary>Structured scene-pacing changes proposed for this tick.</summary>
+public sealed class RpSceneUpdate
+{
+    /// <summary>If set, requests the scene phase move to this value. The arbiter
+    /// only allows moving to the next phase in RpScenePhase declaration order, or
+    /// staying the same, or moving backward (de-escalating) — never skipping
+    /// forward more than one step. See RpConsistencyArbiterService.</summary>
+    public RpScenePhase? AdvanceToPhase { get; set; }
+    /// <summary>How much of the scene's escalation budget this beat consumes,
+    /// 0.0-1.0. Clamped to remaining budget by the arbiter — see below.</summary>
+    public float EscalationDelta { get; set; }
+    public string? AddActiveThread { get; set; }
+    public string? ResolveActiveThread { get; set; }
+    public string? AddForeshadowedElement { get; set; }
+    public string? AddUnresolvedPromise { get; set; }
+    public string? ResolveUnresolvedPromise { get; set; }
+}
+
 public sealed class HistoryYear
 {
     public int Year { get; set; }
@@ -589,6 +661,12 @@ public sealed class LlmSnapshot
     public List<TileSummary> NearbyTiles { get; set; } = [];
     public List<CharSummary> NearbyChars { get; set; } = [];
     public List<RpAvailableAction> AvailableActions { get; set; } = [];
+
+    // --- NEW for Phase 1 ---
+    /// <summary>Null if GetActiveSceneContext(world) returned null.</summary>
+    public RpSceneState? ActiveSceneState { get; set; }
+    /// <summary>Null if GetActiveSceneContext(world) returned null.</summary>
+    public RpContinuityState? ActiveContinuity { get; set; }
 }
 
 public sealed class RpAvailableAction
@@ -633,4 +711,10 @@ public sealed class LlmActionResponse
     public string? Note { get; set; }
     public string? Speech { get; set; }
     public List<CharacterAction> Actions { get; set; } = [];
+
+    // --- NEW for Phase 1 ---
+    public List<RpRelationshipDelta> RelationshipDeltas { get; set; } = [];
+    public List<RpSecretDisclosure> SecretsLearned { get; set; } = [];
+    public RpContinuityUpdate? ContinuityUpdate { get; set; }
+    public RpSceneUpdate? SceneUpdate { get; set; }
 }

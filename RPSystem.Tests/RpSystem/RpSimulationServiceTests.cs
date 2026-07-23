@@ -114,4 +114,31 @@ public class RpSimulationServiceTests
 
         ability.RemainingCooldownTicks.Should().Be(1);
     }
+
+    [Fact]
+    public async Task TickAsync_PopulatesSceneAndContinuityOnSnapshot()
+    {
+        var world = RpTestWorldBuilder.CreateMinimalWorld();
+        var player = world.Characters.Values.First(c => c.Name == "Test Player");
+        var npc = world.Characters.Values.First(c => c.Name == "Test Changeling");
+        var context = world.WorldContexts[0];
+        context.SceneState.Phase = RpScenePhase.Negotiation;
+        context.Continuity.Flags.Add("test-flag");
+        var fake = new RpFakeLlmClient();
+        fake.Enqueue(new LlmActionResponse
+        {
+            Note = "wait",
+            Actions = [new CharacterAction { Type = ActionType.Wait, TickCost = 1 }]
+        });
+        var service = new RpSimulationService(fake);
+
+        await service.TickAsync(world, useLlm: true, provider: "fake", apiKey: "key", model: "model", player.Id, CancellationToken.None);
+
+        fake.Snapshots.Should().ContainSingle(s => s.FocalCharacter.Id == npc.Id);
+        var snapshot = fake.Snapshots.First(s => s.FocalCharacter.Id == npc.Id);
+        snapshot.ActiveSceneState.Should().NotBeNull();
+        snapshot.ActiveSceneState!.Phase.Should().Be(RpScenePhase.Negotiation);
+        snapshot.ActiveContinuity.Should().NotBeNull();
+        snapshot.ActiveContinuity!.Flags.Should().Contain("test-flag");
+    }
 }

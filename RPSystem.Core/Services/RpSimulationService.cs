@@ -132,6 +132,7 @@ public sealed class RpSimulationService
         var events = new List<NarrativeEvent>();
         AppendDebugLog($"Tick start | tick={world.Clock.TickCount + 1} | useLlm={useLlm} | provider={provider} | model={model} | playerId={playerCharacterId}");
         AdvanceClock(world);
+        RegenerateSceneEscalationBudget(world);
         RegenerateCreatures(world);
         ProcessPhysics(world, events);
         UpdatePerception(world);
@@ -195,6 +196,9 @@ public sealed class RpSimulationService
 
             var validActions = ValidateActions(world, character, response.Actions);
             AppendDebugLog($"Validation for {character.Name} | validActions={validActions.Count}");
+            var arbiter = new RpConsistencyArbiterService();
+            var stateEvents = arbiter.ApplyStateUpdates(world, character, response);
+            events.AddRange(stateEvents);
             foreach (var action in validActions)
             {
                 character.ActionQueue.Enqueue(action);
@@ -219,6 +223,22 @@ public sealed class RpSimulationService
         AppendEventsToPerceivedLogs(world, events);
         AppendDebugLog($"Tick end | tick={world.Clock.TickCount} | events={events.Count}");
         return events;
+    }
+
+    /// <summary>
+    /// Resolves the single <see cref="RpWorldContextEntry"/> whose
+    /// <see cref="RpSceneState"/> and <see cref="RpContinuityState"/> should
+    /// be read/written for the current scene. Prefers an enabled entry whose
+    /// name does not end with "Import" (those are lore/character containers
+    /// created by the markdown importer, not scene containers). Returns null
+    /// when the world has no enabled contexts — callers must treat null as
+    /// "scene/continuity features are inert for this world".
+    /// </summary>
+    public static RpWorldContextEntry? GetActiveSceneContext(World world)
+    {
+        var enabled = world.WorldContexts.Where(c => c.IsEnabled).ToList();
+        return enabled.FirstOrDefault(c => !c.Name.EndsWith("Import", StringComparison.OrdinalIgnoreCase))
+            ?? enabled.FirstOrDefault();
     }
 
     public static void UpdatePerception(World world)
@@ -368,6 +388,7 @@ public sealed class RpSimulationService
             .Select(group => group.First())
             .ToList();
         var focalRelationshipRules = BuildFocalRelationshipRules(focalProfiles, focalFactionProfiles, focal, visibleCharacters);
+        var activeContext = GetActiveSceneContext(world);
 
         return new LlmSnapshot
         {
@@ -414,7 +435,9 @@ public sealed class RpSimulationService
                 .Where(world.Characters.ContainsKey)
                 .Select(id => BuildCharSummary(focal, world.Characters[id], focalRelationshipRules))
                 .ToList(),
-            AvailableActions = BuildAvailableActions(world, focal)
+            AvailableActions = BuildAvailableActions(world, focal),
+            ActiveSceneState = activeContext?.SceneState,
+            ActiveContinuity = activeContext?.Continuity
         };
     }
 
@@ -1054,6 +1077,17 @@ public sealed class RpSimulationService
 
         world.Clock.Hour = 0;
         world.Clock.Day++;
+    }
+
+    private static void RegenerateSceneEscalationBudget(World world)
+    {
+        var context = GetActiveSceneContext(world);
+        if (context == null) return;
+        var scene = context.SceneState;
+        scene.EscalationBudget = Math.Clamp(
+            scene.EscalationBudget + scene.EscalationRatePerTick,
+            0f,
+            1f);
     }
 
     private static void RegenerateCreatures(World world)
