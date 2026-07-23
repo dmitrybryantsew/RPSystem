@@ -32,7 +32,9 @@ public partial class App : Application
         services.AddSingleton(_ => new HttpClient());
 
         // Core RP services
+        services.AddSingleton<IRpTextCompletionClient, OpenRouterService>();
         services.AddSingleton<OpenRouterService>();
+        services.AddSingleton<RpAuthoringAssistantService>();
         services.AddSingleton<AiModelService>();
         services.AddSingleton<IRpLlmClient, RpLlmClient>();
         services.AddSingleton<RpSimulationService>();

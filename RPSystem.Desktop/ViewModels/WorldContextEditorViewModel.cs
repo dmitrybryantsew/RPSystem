@@ -14,6 +14,7 @@ public sealed partial class WorldContextEditorViewModel : ObservableObject
     private readonly WorldSimulationViewModel _simulation;
     private readonly RpWorldSaveService _worldSaveService;
     private readonly RpWorldContextEditorService _contextEditorService;
+    private readonly RpAuthoringAssistantService _authoringAssistant;
     private bool _isLoadingWorldContextEditor;
 
     [ObservableProperty] private RpWorldContextEntry? _selectedWorldContext;
@@ -34,16 +35,18 @@ public sealed partial class WorldContextEditorViewModel : ObservableObject
     public WorldContextEditorViewModel(
         WorldSimulationViewModel simulation,
         RpWorldSaveService worldSaveService,
-        RpWorldContextEditorService contextEditorService)
+        RpWorldContextEditorService contextEditorService,
+        RpAuthoringAssistantService authoringAssistant)
     {
         _simulation = simulation;
         _worldSaveService = worldSaveService;
         _contextEditorService = contextEditorService;
+        _authoringAssistant = authoringAssistant;
 
-        ModuleEditor = new ContextModuleEditorViewModel();
-        CharacterEditor = new ContextCharacterEditorViewModel(simulation, null!, worldSaveService);
-        FactionEditor = new FactionProfileEditorViewModel();
-        SpeciesEditor = new SpeciesTemplateEditorViewModel();
+        ModuleEditor = new ContextModuleEditorViewModel(simulation, authoringAssistant);
+        CharacterEditor = new ContextCharacterEditorViewModel(simulation, null!, worldSaveService, authoringAssistant);
+        FactionEditor = new FactionProfileEditorViewModel(simulation, authoringAssistant);
+        SpeciesEditor = new SpeciesTemplateEditorViewModel(simulation, authoringAssistant);
         SceneEnvironmentEditor = new SceneEnvironmentContinuityEditorViewModel();
     }
 

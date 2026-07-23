@@ -14,7 +14,12 @@ public sealed partial class ContextCharacterEditorViewModel : ObservableObject
     private readonly WorldSimulationViewModel _simulation;
     private readonly RpCharacterCompositionService _composition;
     private readonly RpWorldSaveService _worldSaveService;
+    private readonly RpAuthoringAssistantService _authoringAssistant;
     private bool _isLoading;
+
+    [ObservableProperty] private string _aiIdeaPrompt = string.Empty;
+    [ObservableProperty] private bool _isDrafting;
+    [ObservableProperty] private string _aiDraftStatus = string.Empty;
 
     [ObservableProperty] private RpWorldContextCharacter? _selectedContextCharacter;
 
@@ -55,13 +60,15 @@ public sealed partial class ContextCharacterEditorViewModel : ObservableObject
     public ContextCharacterEditorViewModel(
         WorldSimulationViewModel simulation,
         RpCharacterCompositionService composition,
-        RpWorldSaveService worldSaveService)
+        RpWorldSaveService worldSaveService,
+        RpAuthoringAssistantService authoringAssistant)
     {
         _simulation = simulation;
         _composition = composition;
         _worldSaveService = worldSaveService;
+        _authoringAssistant = authoringAssistant;
         AbilityEditor = new ContextAbilityEditorViewModel();
-        RelationshipRuleEditor = new RelationshipRuleEditorViewModel();
+        RelationshipRuleEditor = new RelationshipRuleEditorViewModel(simulation, authoringAssistant);
     }
 
     public void RefreshContextCharacters(List<RpWorldContextCharacter>? characters)
@@ -193,5 +200,70 @@ public sealed partial class ContextCharacterEditorViewModel : ObservableObject
             return position;
         }
         return origin;
+    }
+
+    [RelayCommand]
+    public async Task DraftWithAi()
+    {
+        if (SelectedContextCharacter == null)
+        {
+            AiDraftStatus = "Select or create a context character first.";
+            return;
+        }
+
+        IsDrafting = true;
+        AiDraftStatus = "Drafting...";
+        try
+        {
+            var result = await _authoringAssistant.DraftAsync(
+                RpAuthoringTargetKind.ContextCharacter,
+                AiIdeaPrompt,
+                _simulation.AiProvider,
+                _simulation.GetCurrentProviderApiKey(),
+                _simulation.SelectedModel?.Id ?? _simulation.SelectedModel?.Name ?? string.Empty);
+
+            if (!result.Success)
+            {
+                AiDraftStatus = result.ErrorMessage ?? "Draft failed.";
+                return;
+            }
+
+            ApplyDraftFields(result.Fields);
+
+            AiDraftStatus = result.SafetyState == RpImportSafetyState.NeedsReview
+                ? "Drafted — flagged for review. Enable manually after checking the content."
+                : "Drafted. Review the fields, then click Apply to commit.";
+
+            if (result.SafetyState == RpImportSafetyState.NeedsReview)
+            {
+                ContextCharacterIsNamed = false;
+            }
+        }
+        finally
+        {
+            IsDrafting = false;
+        }
+    }
+
+    private void ApplyDraftFields(Dictionary<string, string> fields)
+    {
+        if (fields.TryGetValue("ContextCharacterName", out var v)) ContextCharacterName = v;
+        if (fields.TryGetValue("ContextCharacterArchetype", out v)) ContextCharacterArchetype = v;
+        if (fields.TryGetValue("ContextCharacterRace", out v)) ContextCharacterRace = v;
+        if (fields.TryGetValue("ContextCharacterRole", out v)) ContextCharacterRole = v;
+        if (fields.TryGetValue("ContextCharacterPersonality", out v)) ContextCharacterPersonality = v;
+        if (fields.TryGetValue("ContextCharacterStory", out v)) ContextCharacterStory = v;
+        if (fields.TryGetValue("ContextCharacterGoal", out v)) ContextCharacterGoal = v;
+        if (fields.TryGetValue("ContextCharacterLifeGoal", out v)) ContextCharacterLifeGoal = v;
+        if (fields.TryGetValue("ContextCharacterTags", out v)) ContextCharacterTags = v;
+        if (fields.TryGetValue("ContextCharacterSpeechStyle", out v)) ContextCharacterSpeechStyle = v;
+        if (fields.TryGetValue("ContextCharacterFirstEncounter", out v)) ContextCharacterFirstEncounter = v;
+        if (fields.TryGetValue("ContextCharacterNegotiation", out v)) ContextCharacterNegotiation = v;
+        if (fields.TryGetValue("ContextCharacterEscalation", out v)) ContextCharacterEscalation = v;
+        if (fields.TryGetValue("ContextCharacterDeEscalation", out v)) ContextCharacterDeEscalation = v;
+        if (fields.TryGetValue("ContextCharacterRelationshipHandling", out v)) ContextCharacterRelationshipHandling = v;
+        if (fields.TryGetValue("ContextCharacterDeception", out v)) ContextCharacterDeception = v;
+        if (fields.TryGetValue("ContextCharacterCombatPreferences", out v)) ContextCharacterCombatPreferences = v;
+        if (fields.TryGetValue("ContextCharacterCapturePreferences", out v)) ContextCharacterCapturePreferences = v;
     }
 }

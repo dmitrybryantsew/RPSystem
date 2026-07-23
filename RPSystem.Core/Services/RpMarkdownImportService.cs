@@ -76,7 +76,7 @@ public sealed class RpMarkdownImportService
         var priority = 100;
         foreach (var section in sections)
         {
-            var safety = ClassifySafety(section.Body);
+            var safety = RpContentSafetyClassifier.ClassifySafety(section.Body);
             var module = new RpContextModule
             {
                 Name = string.IsNullOrWhiteSpace(section.Title) ? "Imported Text" : section.Title,
@@ -224,26 +224,6 @@ public sealed class RpMarkdownImportService
         }
 
         return RpContextVisibility.WorldOnly;
-    }
-
-    private static RpImportSafetyState ClassifySafety(string text)
-    {
-        if (ContainsAny(text, "ignore previous", "system prompt", "developer message", "new guidelines", "jailbreak", "policy override", "always obey this card"))
-        {
-            return RpImportSafetyState.DisabledPromptInjection;
-        }
-
-        if (ContainsAny(text, "non-consensual", "sexual assault", "rape", "torture", "dismember", "graphic gore"))
-        {
-            return RpImportSafetyState.DisabledUnsafe;
-        }
-
-        if (ContainsAny(text, "explicit", "captivity", "coercion", "body horror", "gore"))
-        {
-            return RpImportSafetyState.NeedsReview;
-        }
-
-        return RpImportSafetyState.Allowed;
     }
 
     private static void AddSpeciesTemplates(RpWorldContextEntry context, string content)

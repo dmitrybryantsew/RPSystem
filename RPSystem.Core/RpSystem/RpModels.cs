@@ -53,6 +53,14 @@ public enum RpContextModuleType { GeneralRules, CoreIdentity, Lore, WorldLore, C
 public enum RpContextVisibility { Public, CharacterKnown, WorldOnly, HiddenFromPlayer }
 public enum RpImportSafetyState { Unreviewed, Allowed, NeedsReview, DisabledPromptInjection, DisabledUnsafe }
 public enum RpRelationshipType { Unknown, Ally, Subordinate, Equal, Superior, Rival, Enemy, Dependent, Captor, Captive }
+public enum RpAuthoringTargetKind
+{
+    FactionProfile,
+    ContextCharacter,
+    RelationshipRule,
+    SpeciesTemplate,
+    ContextModule
+}
 public enum RpScenePhase { Setup, FirstContact, Exploration, Negotiation, Escalation, Conflict, Aftermath, Downtime }
 public enum BodyTypeKind { Human, Humanoid, Quadruped, Equine, Avian, Serpentine, Construct, Changeling }
 public enum BodyPartRole { Core, Head, Neck, Arm, Hand, Leg, Foot, Wing, Tail, Sensor, ToolMount, Horn }
@@ -774,4 +782,14 @@ public sealed class LlmActionResponse
     public List<RpSecretDisclosure> SecretsLearned { get; set; } = [];
     public RpContinuityUpdate? ContinuityUpdate { get; set; }
     public RpSceneUpdate? SceneUpdate { get; set; }
+}
+
+public sealed class RpAuthoringDraftResult
+{
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
+    public RpImportSafetyState SafetyState { get; set; } = RpImportSafetyState.Unreviewed;
+    /// <summary>Keys are editor ObservableProperty names (e.g. "FactionPublicDescription"),
+    /// values are the drafted text ready to assign directly to that property.</summary>
+    public Dictionary<string, string> Fields { get; set; } = [];
 }

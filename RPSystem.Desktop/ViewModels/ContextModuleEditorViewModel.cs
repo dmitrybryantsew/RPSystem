@@ -11,7 +11,13 @@ namespace RPSystem.Desktop.ViewModels;
 /// </summary>
 public sealed partial class ContextModuleEditorViewModel : ObservableObject
 {
+    private readonly WorldSimulationViewModel _simulation;
+    private readonly RpAuthoringAssistantService _authoringAssistant;
     private bool _isLoading;
+
+    [ObservableProperty] private string _aiIdeaPrompt = string.Empty;
+    [ObservableProperty] private bool _isDrafting;
+    [ObservableProperty] private string _aiDraftStatus = string.Empty;
 
     [ObservableProperty] private RpContextModule? _selectedContextModule;
 
@@ -32,6 +38,12 @@ public sealed partial class ContextModuleEditorViewModel : ObservableObject
     public string ActiveContextModuleSummary => SelectedContextModule == null
         ? "No module selected"
         : $"{SelectedContextModule.Name} ({SelectedContextModule.Type})";
+
+    public ContextModuleEditorViewModel(WorldSimulationViewModel simulation, RpAuthoringAssistantService authoringAssistant)
+    {
+        _simulation = simulation;
+        _authoringAssistant = authoringAssistant;
+    }
 
     public void RefreshContextModules(List<RpContextModule>? modules)
     {
@@ -81,5 +93,60 @@ public sealed partial class ContextModuleEditorViewModel : ObservableObject
         SelectedContextModule.SourceLabel = ContextModuleSourceLabel.Trim();
         SelectedContextModule.AppliesTo = ContextModuleAppliesTo.Trim();
         SelectedContextModule.Text = ContextModuleText;
+    }
+
+    [RelayCommand]
+    public async Task DraftWithAi()
+    {
+        if (SelectedContextModule == null)
+        {
+            AiDraftStatus = "Select or create a context module first.";
+            return;
+        }
+
+        IsDrafting = true;
+        AiDraftStatus = "Drafting...";
+        try
+        {
+            var result = await _authoringAssistant.DraftAsync(
+                RpAuthoringTargetKind.ContextModule,
+                AiIdeaPrompt,
+                _simulation.AiProvider,
+                _simulation.GetCurrentProviderApiKey(),
+                _simulation.SelectedModel?.Id ?? _simulation.SelectedModel?.Name ?? string.Empty);
+
+            if (!result.Success)
+            {
+                AiDraftStatus = result.ErrorMessage ?? "Draft failed.";
+                return;
+            }
+
+            ApplyDraftFields(result.Fields);
+
+            AiDraftStatus = result.SafetyState == RpImportSafetyState.NeedsReview
+                ? "Drafted — flagged for review. Enable manually after checking the content."
+                : "Drafted. Review the fields, then click Apply to commit.";
+
+            if (result.SafetyState == RpImportSafetyState.NeedsReview)
+            {
+                ContextModuleIsEnabled = false;
+            }
+        }
+        finally
+        {
+            IsDrafting = false;
+        }
+    }
+
+    private void ApplyDraftFields(Dictionary<string, string> fields)
+    {
+        if (fields.TryGetValue("ContextModuleName", out var v)) ContextModuleName = v;
+        if (fields.TryGetValue("ContextModuleType", out v) && ContextModuleTypeOptions.Contains(v, StringComparer.OrdinalIgnoreCase))
+            ContextModuleType = v;
+        if (fields.TryGetValue("ContextModuleVisibility", out v) && ContextModuleVisibilityOptions.Contains(v, StringComparer.OrdinalIgnoreCase))
+            ContextModuleVisibility = v;
+        if (fields.TryGetValue("ContextModulePriorityText", out v) && int.TryParse(v, out var pri)) ContextModulePriority = pri;
+        if (fields.TryGetValue("ContextModuleAppliesTo", out v)) ContextModuleAppliesTo = v;
+        if (fields.TryGetValue("ContextModuleText", out v)) ContextModuleText = v;
     }
 }

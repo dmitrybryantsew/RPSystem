@@ -322,8 +322,10 @@ public sealed partial class WorldSimulationViewModel : ObservableObject
 
     public Character? PlayerCharacter { get; set; }
 
-    private string GetCurrentProviderApiKey()
-        => (_settingsService.AiProvider switch
+    public string AiProvider => _settingsService.AiProvider;
+
+    public string GetCurrentProviderApiKey()
+        => (AiProvider switch
         {
             "OpenAIProxy" => _settingsService.OpenAiProxyApiKey?.Trim(),
             "ZAI" => _settingsService.ZaiApiKey?.Trim(),

@@ -11,7 +11,13 @@ namespace RPSystem.Desktop.ViewModels;
 /// </summary>
 public sealed partial class SpeciesTemplateEditorViewModel : ObservableObject
 {
+    private readonly WorldSimulationViewModel _simulation;
+    private readonly RpAuthoringAssistantService _authoringAssistant;
     private bool _isLoading;
+
+    [ObservableProperty] private string _aiIdeaPrompt = string.Empty;
+    [ObservableProperty] private bool _isDrafting;
+    [ObservableProperty] private string _aiDraftStatus = string.Empty;
 
     [ObservableProperty] private RpSpeciesTemplate? _selectedSpeciesTemplate;
 
@@ -33,6 +39,12 @@ public sealed partial class SpeciesTemplateEditorViewModel : ObservableObject
     public string ActiveSpeciesTemplateSummary => SelectedSpeciesTemplate == null
         ? "No species template selected"
         : $"{SelectedSpeciesTemplate.Name} ({SelectedSpeciesTemplate.BodyType})";
+
+    public SpeciesTemplateEditorViewModel(WorldSimulationViewModel simulation, RpAuthoringAssistantService authoringAssistant)
+    {
+        _simulation = simulation;
+        _authoringAssistant = authoringAssistant;
+    }
 
     public void RefreshSpeciesTemplates(List<RpSpeciesTemplate>? templates)
     {
@@ -85,5 +97,58 @@ public sealed partial class SpeciesTemplateEditorViewModel : ObservableObject
         SelectedSpeciesTemplate.MagicRules = SpeciesMagicRules;
         SelectedSpeciesTemplate.AnatomyModifiers = EditorTextFormat.ParseDictionary(SpeciesAnatomyModifiersText);
         SelectedSpeciesTemplate.Tags = EditorTextFormat.ParseLines(SpeciesTagsText);
+    }
+
+    [RelayCommand]
+    public async Task DraftWithAi()
+    {
+        if (SelectedSpeciesTemplate == null)
+        {
+            AiDraftStatus = "Select or create a species template first.";
+            return;
+        }
+
+        IsDrafting = true;
+        AiDraftStatus = "Drafting...";
+        try
+        {
+            var result = await _authoringAssistant.DraftAsync(
+                RpAuthoringTargetKind.SpeciesTemplate,
+                AiIdeaPrompt,
+                _simulation.AiProvider,
+                _simulation.GetCurrentProviderApiKey(),
+                _simulation.SelectedModel?.Id ?? _simulation.SelectedModel?.Name ?? string.Empty);
+
+            if (!result.Success)
+            {
+                AiDraftStatus = result.ErrorMessage ?? "Draft failed.";
+                return;
+            }
+
+            ApplyDraftFields(result.Fields);
+
+            AiDraftStatus = result.SafetyState == RpImportSafetyState.NeedsReview
+                ? "Drafted — flagged for review. Enable manually after checking the content."
+                : "Drafted. Review the fields, then click Apply to commit.";
+        }
+        finally
+        {
+            IsDrafting = false;
+        }
+    }
+
+    private void ApplyDraftFields(Dictionary<string, string> fields)
+    {
+        if (fields.TryGetValue("SpeciesTemplateName", out var v)) SpeciesTemplateName = v;
+        if (fields.TryGetValue("SpeciesTemplateRace", out v)) SpeciesTemplateRace = v;
+        if (fields.TryGetValue("SpeciesTemplateBodyType", out v) && BodyTypeOptions.Contains(v, StringComparer.OrdinalIgnoreCase))
+            SpeciesTemplateBodyType = v;
+        if (fields.TryGetValue("SpeciesBodyLanguageText", out v)) SpeciesBodyLanguageText = v;
+        if (fields.TryGetValue("SpeciesVocalizationsText", out v)) SpeciesVocalizationsText = v;
+        if (fields.TryGetValue("SpeciesDietRules", out v)) SpeciesDietRules = v;
+        if (fields.TryGetValue("SpeciesEnergyRules", out v)) SpeciesEnergyRules = v;
+        if (fields.TryGetValue("SpeciesMagicRules", out v)) SpeciesMagicRules = v;
+        if (fields.TryGetValue("SpeciesAnatomyModifiersText", out v)) SpeciesAnatomyModifiersText = v;
+        if (fields.TryGetValue("SpeciesTagsText", out v)) SpeciesTagsText = v;
     }
 }

@@ -11,7 +11,13 @@ namespace RPSystem.Desktop.ViewModels;
 /// </summary>
 public sealed partial class FactionProfileEditorViewModel : ObservableObject
 {
+    private readonly WorldSimulationViewModel _simulation;
+    private readonly RpAuthoringAssistantService _authoringAssistant;
     private bool _isLoading;
+
+    [ObservableProperty] private string _aiIdeaPrompt = string.Empty;
+    [ObservableProperty] private bool _isDrafting;
+    [ObservableProperty] private string _aiDraftStatus = string.Empty;
 
     [ObservableProperty] private RpFactionProfile? _selectedFactionProfile;
 
@@ -47,6 +53,12 @@ public sealed partial class FactionProfileEditorViewModel : ObservableObject
             if (FactionProfiles.Count == 0) return "No faction profiles";
             return $"{FactionProfiles.Count(f => f.IsEnabled)} active / {FactionProfiles.Count} total";
         }
+    }
+
+    public FactionProfileEditorViewModel(WorldSimulationViewModel simulation, RpAuthoringAssistantService authoringAssistant)
+    {
+        _simulation = simulation;
+        _authoringAssistant = authoringAssistant;
     }
 
     public void RefreshFactionProfiles(List<RpFactionProfile>? factions)
@@ -204,5 +216,65 @@ public sealed partial class FactionProfileEditorViewModel : ObservableObject
             });
         }
         return result;
+    }
+
+    [RelayCommand]
+    public async Task DraftWithAi()
+    {
+        if (SelectedFactionProfile == null)
+        {
+            AiDraftStatus = "Select or create a faction profile first.";
+            return;
+        }
+
+        IsDrafting = true;
+        AiDraftStatus = "Drafting...";
+        try
+        {
+            var result = await _authoringAssistant.DraftAsync(
+                RpAuthoringTargetKind.FactionProfile,
+                AiIdeaPrompt,
+                _simulation.AiProvider,
+                _simulation.GetCurrentProviderApiKey(),
+                _simulation.SelectedModel?.Id ?? _simulation.SelectedModel?.Name ?? string.Empty);
+
+            if (!result.Success)
+            {
+                AiDraftStatus = result.ErrorMessage ?? "Draft failed.";
+                return;
+            }
+
+            ApplyDraftFields(result.Fields);
+
+            AiDraftStatus = result.SafetyState == RpImportSafetyState.NeedsReview
+                ? "Drafted — flagged for review. Enable manually after checking the content."
+                : "Drafted. Review the fields, then click Apply to commit.";
+
+            if (result.SafetyState == RpImportSafetyState.NeedsReview)
+            {
+                FactionIsEnabled = false;
+            }
+        }
+        finally
+        {
+            IsDrafting = false;
+        }
+    }
+
+    private void ApplyDraftFields(Dictionary<string, string> fields)
+    {
+        if (fields.TryGetValue("FactionName", out var v)) FactionName = v;
+        if (fields.TryGetValue("FactionId", out v)) FactionId = v;
+        if (fields.TryGetValue("FactionPublicDescription", out v)) FactionPublicDescription = v;
+        if (fields.TryGetValue("FactionHiddenDoctrine", out v)) FactionHiddenDoctrine = v;
+        if (fields.TryGetValue("FactionCulture", out v)) FactionCulture = v;
+        if (fields.TryGetValue("FactionHierarchy", out v)) FactionHierarchy = v;
+        if (fields.TryGetValue("FactionGoals", out v)) FactionGoals = v;
+        if (fields.TryGetValue("FactionTaboos", out v)) FactionTaboos = v;
+        if (fields.TryGetValue("FactionOutsiderBehavior", out v)) FactionOutsiderBehavior = v;
+        if (fields.TryGetValue("FactionMemberBehavior", out v)) FactionMemberBehavior = v;
+        if (fields.TryGetValue("FactionAppearance", out v)) FactionAppearance = v;
+        if (fields.TryGetValue("FactionTags", out v)) FactionTags = v;
+        if (fields.TryGetValue("FactionRelationshipRulesText", out v)) FactionRelationshipRulesText = v;
     }
 }

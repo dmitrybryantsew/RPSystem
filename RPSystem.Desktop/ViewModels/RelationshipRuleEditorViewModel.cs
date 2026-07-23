@@ -11,7 +11,13 @@ namespace RPSystem.Desktop.ViewModels;
 /// </summary>
 public sealed partial class RelationshipRuleEditorViewModel : ObservableObject
 {
+    private readonly WorldSimulationViewModel _simulation;
+    private readonly RpAuthoringAssistantService _authoringAssistant;
     private bool _isLoading;
+
+    [ObservableProperty] private string _aiIdeaPrompt = string.Empty;
+    [ObservableProperty] private bool _isDrafting;
+    [ObservableProperty] private string _aiDraftStatus = string.Empty;
 
     [ObservableProperty] private RpRelationshipRule? _selectedRelationshipRule;
 
@@ -33,6 +39,12 @@ public sealed partial class RelationshipRuleEditorViewModel : ObservableObject
     public string ActiveRelationshipRuleSummary => SelectedRelationshipRule == null
         ? "No relationship rule selected"
         : $"{SelectedRelationshipRule.TargetNameOrTag} ({SelectedRelationshipRule.Type})";
+
+    public RelationshipRuleEditorViewModel(WorldSimulationViewModel simulation, RpAuthoringAssistantService authoringAssistant)
+    {
+        _simulation = simulation;
+        _authoringAssistant = authoringAssistant;
+    }
 
     public void RefreshRelationshipRules(List<RpRelationshipRule>? rules)
     {
@@ -84,5 +96,58 @@ public sealed partial class RelationshipRuleEditorViewModel : ObservableObject
         SelectedRelationshipRule.Suspicion = RelationshipSuspicion;
         SelectedRelationshipRule.KnownSecrets = EditorTextFormat.ParseLines(RelationshipKnownSecretsText);
         SelectedRelationshipRule.HandlingRules = RelationshipHandlingRules;
+    }
+
+    [RelayCommand]
+    public async Task DraftWithAi()
+    {
+        if (SelectedRelationshipRule == null)
+        {
+            AiDraftStatus = "Select or create a relationship rule first.";
+            return;
+        }
+
+        IsDrafting = true;
+        AiDraftStatus = "Drafting...";
+        try
+        {
+            var result = await _authoringAssistant.DraftAsync(
+                RpAuthoringTargetKind.RelationshipRule,
+                AiIdeaPrompt,
+                _simulation.AiProvider,
+                _simulation.GetCurrentProviderApiKey(),
+                _simulation.SelectedModel?.Id ?? _simulation.SelectedModel?.Name ?? string.Empty);
+
+            if (!result.Success)
+            {
+                AiDraftStatus = result.ErrorMessage ?? "Draft failed.";
+                return;
+            }
+
+            ApplyDraftFields(result.Fields);
+
+            AiDraftStatus = result.SafetyState == RpImportSafetyState.NeedsReview
+                ? "Drafted — flagged for review. Enable manually after checking the content."
+                : "Drafted. Review the fields, then click Apply to commit.";
+        }
+        finally
+        {
+            IsDrafting = false;
+        }
+    }
+
+    private void ApplyDraftFields(Dictionary<string, string> fields)
+    {
+        if (fields.TryGetValue("RelationshipTargetNameOrTag", out var v)) RelationshipTargetNameOrTag = v;
+        if (fields.TryGetValue("RelationshipType", out v) && RelationshipTypeOptions.Contains(v, StringComparer.OrdinalIgnoreCase))
+            RelationshipType = v;
+        if (fields.TryGetValue("RelationshipTrustText", out v) && int.TryParse(v, out var trust)) RelationshipTrust = trust;
+        if (fields.TryGetValue("RelationshipFearText", out v) && int.TryParse(v, out var fear)) RelationshipFear = fear;
+        if (fields.TryGetValue("RelationshipDependencyText", out v) && int.TryParse(v, out var dep)) RelationshipDependency = dep;
+        if (fields.TryGetValue("RelationshipLoyaltyText", out v) && int.TryParse(v, out var loy)) RelationshipLoyalty = loy;
+        if (fields.TryGetValue("RelationshipManipulationText", out v) && int.TryParse(v, out var man)) RelationshipManipulation = man;
+        if (fields.TryGetValue("RelationshipSuspicionText", out v) && int.TryParse(v, out var sus)) RelationshipSuspicion = sus;
+        if (fields.TryGetValue("RelationshipKnownSecretsText", out v)) RelationshipKnownSecretsText = v;
+        if (fields.TryGetValue("RelationshipHandlingRules", out v)) RelationshipHandlingRules = v;
     }
 }

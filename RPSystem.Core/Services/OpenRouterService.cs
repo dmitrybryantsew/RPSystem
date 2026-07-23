@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace RPSystem.Core.Services
 {
-    public class OpenRouterService
+    public class OpenRouterService : IRpTextCompletionClient
     {
         private readonly HttpClient _httpClient;
         private readonly ISettingsService _settingsService;
