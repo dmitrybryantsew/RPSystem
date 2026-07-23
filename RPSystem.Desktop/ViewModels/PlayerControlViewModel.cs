@@ -19,6 +19,7 @@ public sealed partial class PlayerControlViewModel : ObservableObject
     private readonly RpInteractionService _interactionService;
     private readonly RpAbilityService _abilityService;
     private readonly ISettingsService _settingsService;
+    private readonly RpConversationService _conversationService;
 
     [ObservableProperty] private Character? _playerCharacter;
     [ObservableProperty] private string _playerInput = string.Empty;
@@ -44,6 +45,17 @@ public sealed partial class PlayerControlViewModel : ObservableObject
     public ObservableCollection<Item> InventoryItems { get; } = [];
 
     public string PlayerCharacterText => PlayerCharacter == null ? "No player" : $"Player: {PlayerCharacter.Name}";
+
+    public bool IsInConversation => _simulation.World.ActiveConversation is { IsActive: true };
+
+    public string ConversationPartnerName =>
+        _simulation.World.ActiveConversation is { IsActive: true } session &&
+        _simulation.World.Characters.TryGetValue(session.PartnerCharacterId, out var partner)
+            ? partner.Name
+            : string.Empty;
+
+    public string ScenePhaseText =>
+        RpSimulationService.GetActiveSceneContext(_simulation.World)?.SceneState.Phase.ToString() ?? "N/A";
     public string PlayerHealthText => PlayerCharacter == null ? "HP -/-" : $"HP {PlayerCharacter.Vitals.HealthCurrent:0.#}/{PlayerCharacter.Vitals.HealthMax:0.#}";
     public string PlayerManaText => PlayerCharacter == null ? "Mana -/-" : $"Mana {PlayerCharacter.Vitals.ManaCurrent:0.#}/{PlayerCharacter.Vitals.ManaMax:0.#}";
     public string PlayerFocusText => PlayerCharacter == null ? "Focus -/-" : $"Focus {PlayerCharacter.Vitals.FocusCurrent:0.#}/{PlayerCharacter.Vitals.FocusMax:0.#}";
@@ -60,7 +72,8 @@ public sealed partial class PlayerControlViewModel : ObservableObject
         RpInventoryService inventoryService,
         RpInteractionService interactionService,
         RpAbilityService abilityService,
-        ISettingsService settingsService)
+        ISettingsService settingsService,
+        RpConversationService conversationService)
     {
         _simulation = simulation;
         _simulationService = simulationService;
@@ -69,6 +82,7 @@ public sealed partial class PlayerControlViewModel : ObservableObject
         _interactionService = interactionService;
         _abilityService = abilityService;
         _settingsService = settingsService;
+        _conversationService = conversationService;
 
         _moveNorthKey = settingsService.GetString("RpMoveNorthKey", "W");
         _moveSouthKey = settingsService.GetString("RpMoveSouthKey", "S");
@@ -254,9 +268,44 @@ public sealed partial class PlayerControlViewModel : ObservableObject
     [RelayCommand]
     public void TalkToInspectedCharacter()
     {
-        var evt = _interactionService.CreateTalkEvent(_simulation.World, PlayerCharacter, SelectedTilePosition, out var status);
-        AddEventIfAny(evt);
+        var target = _interactionService.GetInspectedCharacters(_simulation.World, SelectedTilePosition)
+            .FirstOrDefault(c => PlayerCharacter == null || c.Id != PlayerCharacter.Id);
+
+        if (target == null)
+        {
+            _simulation.StatusText = "No character on inspected tile to talk to.";
+            return;
+        }
+
+        if (PlayerCharacter == null)
+        {
+            _simulation.StatusText = "Choose a player character first.";
+            return;
+        }
+
+        var (success, status, openingEvent) = _conversationService.StartConversation(_simulation.World, PlayerCharacter.Id, target.Id);
         _simulation.StatusText = status;
+        if (success && openingEvent != null)
+        {
+            AddEventToAll(openingEvent);
+        }
+
+        OnPropertyChanged(nameof(IsInConversation));
+        OnPropertyChanged(nameof(ConversationPartnerName));
+    }
+
+    [RelayCommand]
+    public void EndConversation()
+    {
+        var closingEvent = _conversationService.EndConversation(_simulation.World);
+        if (closingEvent != null)
+        {
+            AddEventToAll(closingEvent);
+            _simulation.StatusText = "Conversation ended.";
+        }
+
+        OnPropertyChanged(nameof(IsInConversation));
+        OnPropertyChanged(nameof(ConversationPartnerName));
     }
 
     [RelayCommand]
@@ -288,7 +337,17 @@ public sealed partial class PlayerControlViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(PlayerInput)) return;
 
-        var evt = new NarrativeEvent
+        if (_simulation.World.ActiveConversation is { IsActive: true })
+        {
+            var evt = _conversationService.AddPlayerLine(_simulation.World, PlayerInput.Trim());
+            _simulation.EventLog.Insert(0, FormatEvent(evt));
+            PlayerInput = string.Empty;
+            TrimEventLog();
+            _simulation.StatusText = "Sent.";
+            return;
+        }
+
+        var evt2 = new NarrativeEvent
         {
             Tick = _simulation.World.Clock.TickCount,
             ActorName = "Narrator",
@@ -297,14 +356,14 @@ public sealed partial class PlayerControlViewModel : ObservableObject
 
         foreach (var character in _simulation.World.Characters.Values)
         {
-            character.PerceivedLog.Add(evt);
+            character.PerceivedLog.Add(evt2);
             if (character.PerceivedLog.Count > 25)
             {
                 character.PerceivedLog = character.PerceivedLog.TakeLast(25).ToList();
             }
         }
 
-        _simulation.EventLog.Insert(0, FormatEvent(evt));
+        _simulation.EventLog.Insert(0, FormatEvent(evt2));
         PlayerInput = string.Empty;
         TrimEventLog();
         _simulation.StatusText = "Narrator event added.";

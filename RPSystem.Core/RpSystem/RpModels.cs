@@ -136,6 +136,29 @@ public sealed class World
     /// Used by RpMemoryCompactionService to decide when the next compaction is due.
     /// </summary>
     public long LastHistoryCompactionTick { get; set; }
+
+    /// <summary>Null when no conversation is in progress. Only one at a time — see
+    /// RpConversationService for how starting a new one interacts with an existing one.</summary>
+    public RpConversationSession? ActiveConversation { get; set; }
+}
+
+/// <summary>
+/// An in-progress focused exchange between the player character and one NPC.
+/// While active, RpSimulationService.TickAsync gives the partner character's
+/// LLM call the full Transcript instead of the usual world-event window, and
+/// skips new LLM/coded-AI decisions for every other character.
+/// </summary>
+public sealed class RpConversationSession
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid PlayerCharacterId { get; set; }
+    public Guid PartnerCharacterId { get; set; }
+    /// <summary>Every event belonging to this conversation, in order, never
+    /// trimmed by the normal 25-item PerceivedLog cap. Bounded only by
+    /// RpConversationService.MaxTranscriptLength as a hard safety cap.</summary>
+    public List<NarrativeEvent> Transcript { get; set; } = [];
+    public long StartedTick { get; set; }
+    public bool IsActive { get; set; } = true;
 }
 
 public sealed class RpWorldContextEntry

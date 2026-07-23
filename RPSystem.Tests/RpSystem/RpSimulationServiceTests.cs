@@ -193,4 +193,298 @@ public class RpSimulationServiceTests
         snapshot.HistoryDigest.Should().Equal(["epoch two summary", "epoch four summary", "epoch five summary", "epoch six summary"]);
         snapshot.HistoryDigest.Should().NotContain(s => string.IsNullOrWhiteSpace(s));
     }
+
+    [Fact]
+    public async Task TickAsync_ConversationFocusMode_OnlyCallsLlmForPartner()
+    {
+        var world = new World { Name = "Conv Focus Test" };
+        world.WorldContexts.Add(new RpWorldContextEntry
+        {
+            Name = "Main Scene",
+            IsEnabled = true,
+            SceneState = new RpSceneState(),
+            Continuity = new RpContinuityState()
+        });
+
+        var player = new Character
+        {
+            Name = "Player",
+            Race = "Human",
+            Position = new Vec3Int(0, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+        var partner = new Character
+        {
+            Name = "Partner",
+            Race = "Human",
+            Position = new Vec3Int(1, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+        var bystander = new Character
+        {
+            Name = "Bystander",
+            Race = "Human",
+            Position = new Vec3Int(2, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+
+        world.Characters[player.Id] = player;
+        world.Characters[partner.Id] = partner;
+        world.Characters[bystander.Id] = bystander;
+
+        RpSimulationService.UpdatePerception(world);
+
+        var conversationService = new RpConversationService(new RpRuleBasedTextSummarizer());
+        conversationService.StartConversation(world, player.Id, partner.Id);
+
+        var fake = new RpFakeLlmClient();
+        fake.Enqueue(new LlmActionResponse
+        {
+            Note = "wait",
+            Actions = [new CharacterAction { Type = ActionType.Wait, TickCost = 1 }]
+        });
+        var service = new RpSimulationService(fake);
+
+        await service.TickAsync(world, useLlm: true, provider: "fake", apiKey: "key", model: "model", player.Id, CancellationToken.None);
+
+        fake.CallCount.Should().Be(1);
+        fake.Snapshots[0].FocalCharacter.Id.Should().Be(partner.Id);
+    }
+
+    [Fact]
+    public async Task TickAsync_ConversationFocusMode_PartnerSnapshotUsesTranscriptNotPerceivedLog()
+    {
+        var world = new World { Name = "Conv Transcript Test" };
+        world.WorldContexts.Add(new RpWorldContextEntry
+        {
+            Name = "Main Scene",
+            IsEnabled = true,
+            SceneState = new RpSceneState(),
+            Continuity = new RpContinuityState()
+        });
+
+        var player = new Character
+        {
+            Name = "Player",
+            Race = "Human",
+            Position = new Vec3Int(0, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+        var partner = new Character
+        {
+            Name = "Partner",
+            Race = "Human",
+            Position = new Vec3Int(1, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+
+        world.Characters[player.Id] = player;
+        world.Characters[partner.Id] = partner;
+        RpSimulationService.UpdatePerception(world);
+
+        var conversationService = new RpConversationService(new RpRuleBasedTextSummarizer());
+        conversationService.StartConversation(world, player.Id, partner.Id);
+        conversationService.AddPlayerLine(world, "hello partner");
+
+        // Seed partner's PerceivedLog with unrelated filler events
+        for (var i = 0; i < 20; i++)
+        {
+            partner.PerceivedLog.Add(new NarrativeEvent
+            {
+                Tick = 100 + i,
+                ActorName = "Filler",
+                Description = $"filler event {i}"
+            });
+        }
+
+        var fake = new RpFakeLlmClient();
+        fake.Enqueue(new LlmActionResponse
+        {
+            Note = "wait",
+            Actions = [new CharacterAction { Type = ActionType.Wait, TickCost = 1 }]
+        });
+        var service = new RpSimulationService(fake);
+
+        await service.TickAsync(world, useLlm: true, provider: "fake", apiKey: "key", model: "model", player.Id, CancellationToken.None);
+
+        var snapshot = fake.Snapshots[0];
+        snapshot.RecentEvents.Should().Contain(e => e.Description == "hello partner");
+        snapshot.RecentEvents.Should().NotContain(e => e.Description.StartsWith("filler event"));
+    }
+
+    [Fact]
+    public async Task TickAsync_ConversationFocusMode_DoesNotStartNewDecisionsForBystanders()
+    {
+        var world = new World { Name = "Conv Bystander Test" };
+        world.WorldContexts.Add(new RpWorldContextEntry
+        {
+            Name = "Main Scene",
+            IsEnabled = true,
+            SceneState = new RpSceneState(),
+            Continuity = new RpContinuityState()
+        });
+
+        var player = new Character
+        {
+            Name = "Player",
+            Race = "Human",
+            Position = new Vec3Int(0, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+        var partner = new Character
+        {
+            Name = "Partner",
+            Race = "Human",
+            Position = new Vec3Int(1, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+        var bystander = new Character
+        {
+            Name = "Bystander",
+            Race = "Human",
+            Position = new Vec3Int(2, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+
+        world.Characters[player.Id] = player;
+        world.Characters[partner.Id] = partner;
+        world.Characters[bystander.Id] = bystander;
+
+        RpSimulationService.UpdatePerception(world);
+
+        var conversationService = new RpConversationService(new RpRuleBasedTextSummarizer());
+        conversationService.StartConversation(world, player.Id, partner.Id);
+
+        var fake = new RpFakeLlmClient();
+        fake.Enqueue(new LlmActionResponse
+        {
+            Note = "wait",
+            Actions = [new CharacterAction { Type = ActionType.Wait, TickCost = 1 }]
+        });
+        var service = new RpSimulationService(fake);
+
+        await service.TickAsync(world, useLlm: true, provider: "fake", apiKey: "key", model: "model", player.Id, CancellationToken.None);
+
+        bystander.ActionQueue.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task TickAsync_AutoEndsConversation_WhenPartnerBecomesUnconscious()
+    {
+        var world = new World { Name = "Conv AutoEnd Test" };
+        world.WorldContexts.Add(new RpWorldContextEntry
+        {
+            Name = "Main Scene",
+            IsEnabled = true,
+            SceneState = new RpSceneState(),
+            Continuity = new RpContinuityState()
+        });
+
+        var player = new Character
+        {
+            Name = "Player",
+            Race = "Human",
+            Position = new Vec3Int(0, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+        var partner = new Character
+        {
+            Name = "Partner",
+            Race = "Human",
+            Position = new Vec3Int(1, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+
+        world.Characters[player.Id] = player;
+        world.Characters[partner.Id] = partner;
+        RpSimulationService.UpdatePerception(world);
+
+        var conversationService = new RpConversationService(new RpRuleBasedTextSummarizer());
+        conversationService.StartConversation(world, player.Id, partner.Id);
+        world.ActiveConversation.Should().NotBeNull();
+
+        partner.Vitals.LifeState = RpLifeState.Unconscious;
+
+        var fake = new RpFakeLlmClient();
+        fake.Enqueue(new LlmActionResponse
+        {
+            Note = "wait",
+            Actions = [new CharacterAction { Type = ActionType.Wait, TickCost = 1 }]
+        });
+        var service = new RpSimulationService(fake);
+
+        await service.TickAsync(world, useLlm: true, provider: "fake", apiKey: "key", model: "model", player.Id, CancellationToken.None);
+
+        world.ActiveConversation.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task TickAsync_ConversationFocusMode_StillRunsPhysicsAndPerceptionForEveryone()
+    {
+        var world = new World { Name = "Conv Physics Test" };
+        world.WorldContexts.Add(new RpWorldContextEntry
+        {
+            Name = "Main Scene",
+            IsEnabled = true,
+            SceneState = new RpSceneState(),
+            Continuity = new RpContinuityState()
+        });
+
+        var player = new Character
+        {
+            Name = "Player",
+            Race = "Human",
+            Position = new Vec3Int(0, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+        var partner = new Character
+        {
+            Name = "Partner",
+            Race = "Human",
+            Position = new Vec3Int(1, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+        var bystander = new Character
+        {
+            Name = "Bystander",
+            Race = "Human",
+            Position = new Vec3Int(2, 0, 0),
+            BodyType = BodyTypeKind.Human,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Human)
+        };
+
+        world.Characters[player.Id] = player;
+        world.Characters[partner.Id] = partner;
+        world.Characters[bystander.Id] = bystander;
+
+        RpSimulationService.UpdatePerception(world);
+
+        var conversationService = new RpConversationService(new RpRuleBasedTextSummarizer());
+        conversationService.StartConversation(world, player.Id, partner.Id);
+
+        var fake = new RpFakeLlmClient();
+        fake.Enqueue(new LlmActionResponse
+        {
+            Note = "wait",
+            Actions = [new CharacterAction { Type = ActionType.Wait, TickCost = 1 }]
+        });
+        var service = new RpSimulationService(fake);
+
+        await service.TickAsync(world, useLlm: true, provider: "fake", apiKey: "key", model: "model", player.Id, CancellationToken.None);
+
+        bystander.PerceivedState.VisibleCharacterIds.Should().Contain(player.Id);
+        bystander.PerceivedState.VisibleCharacterIds.Should().Contain(partner.Id);
+    }
 }

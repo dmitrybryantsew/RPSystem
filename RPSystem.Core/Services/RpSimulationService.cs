@@ -95,6 +95,10 @@ public sealed class RpLlmClient : IRpLlmClient
             "they summarize things that already happened but are no longer shown in full detail. " +
             "Do not contradict them, and do not treat their absence of detail as permission to invent " +
             "new facts about what happened during those periods. " +
+            "If recentEvents contains a back-and-forth exchange with the player rather than " +
+            "general world events, you are in a focused conversation — respond in-scene to " +
+            "the most recent player line, staying consistent with everything earlier in that " +
+            "same exchange. " +
             "Return only JSON with this schema: {\"note\":\"one short sentence explaining the chosen move\",\"speech\":null|\"dialogue\",\"actions\":[{\"type\":\"Move|Attack|Interact|Speak|Wait|Use\",\"targetPos\":{\"x\":0,\"y\":0,\"z\":0}|null,\"targetId\":null,\"payload\":null,\"tickCost\":1,\"note\":\"optional short reason\"}]}. " +
             "Choose only actions listed in availableActions and copy the action object shape exactly, changing only payload text for Speak/Use if needed. " +
             "Prefer a concrete world action such as Move, Speak, or Interact when one is available. Choose Wait only when every other action is clearly useless.";
@@ -140,6 +144,13 @@ public sealed class RpSimulationService
         RegenerateCreatures(world);
         ProcessPhysics(world, events);
         UpdatePerception(world);
+        if (world.ActiveConversation is { IsActive: true } activeConv &&
+            (!world.Characters.TryGetValue(activeConv.PartnerCharacterId, out var partnerCheck) ||
+             partnerCheck.Vitals.LifeState != RpLifeState.Conscious))
+        {
+            activeConv.IsActive = false;
+            world.ActiveConversation = null;
+        }
         if (!useLlm)
         {
             events.AddRange(new RpCodedAiService().PlanWorld(world));
@@ -150,6 +161,7 @@ public sealed class RpSimulationService
             .ThenBy(c => c.Id))
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var eventCountBeforeThisCharacter = events.Count;
             if (character.Vitals.LifeState != RpLifeState.Conscious)
             {
                 continue;
@@ -166,6 +178,12 @@ public sealed class RpSimulationService
             }
 
             if (playerCharacterId.HasValue && character.Id == playerCharacterId.Value)
+            {
+                continue;
+            }
+
+            if (world.ActiveConversation is { IsActive: true } focusSession &&
+                character.Id != focusSession.PartnerCharacterId)
             {
                 continue;
             }
@@ -221,6 +239,19 @@ public sealed class RpSimulationService
             }
 
             ProcessQueuedActions(world, character, events);
+
+            if (world.ActiveConversation is { IsActive: true } syncSession &&
+                character.Id == syncSession.PartnerCharacterId)
+            {
+                var newEvents = events.Skip(eventCountBeforeThisCharacter).ToList();
+                syncSession.Transcript.AddRange(newEvents);
+                if (syncSession.Transcript.Count > RpConversationService.MaxTranscriptLength)
+                {
+                    syncSession.Transcript = syncSession.Transcript
+                        .Skip(syncSession.Transcript.Count - RpConversationService.MaxTranscriptLength)
+                        .ToList();
+                }
+            }
         }
 
         UpdatePerception(world);
@@ -436,7 +467,10 @@ public sealed class RpSimulationService
             FocalFactionProfiles = focalFactionProfiles,
             FocalRelationshipRules = focalRelationshipRules,
             FocalCharacter = focal,
-            RecentEvents = focal.PerceivedLog.TakeLast(15).ToList(),
+            RecentEvents = world.ActiveConversation is { IsActive: true } conversationSession &&
+                conversationSession.PartnerCharacterId == focal.Id
+                    ? conversationSession.Transcript.TakeLast(60).ToList()
+                    : focal.PerceivedLog.TakeLast(15).ToList(),
             NearbyTiles = visiblePositions
                 .Where(world.Tiles.ContainsKey)
                 .Select(pos => BuildTileSummary(world, world.Tiles[pos]))

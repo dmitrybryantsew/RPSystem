@@ -42,6 +42,8 @@ public partial class App : Application
         services.AddSingleton<RpMarkdownImportService>();
         services.AddSingleton<RpInteractionService>();
         services.AddSingleton<RpAbilityService>();
+        services.AddSingleton<IRpTextSummarizer, RpRuleBasedTextSummarizer>();
+        services.AddSingleton<RpConversationService>();
         services.AddSingleton<RpCaveMapGenerator>();
         services.AddSingleton<RpMapRenderProjectionService>();
         services.AddSingleton<RpFlowFieldService>();
