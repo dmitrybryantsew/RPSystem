@@ -492,6 +492,125 @@ public static class RpWorldFactory
         return world;
     }
 
+    public static World CreateNegotiationShowcaseWorld()
+    {
+        var world = CreateCavernStarterWorld();
+        world.Name = "Cavern Negotiation Showcase";
+
+        var showcaseContext = new RpWorldContextEntry
+        {
+            Name = "Negotiation Showcase",
+            IsEnabled = true,
+            RulesText = "A tense first encounter with a wary changeling scout who is willing to talk before fighting.",
+            SceneState = new RpSceneState
+            {
+                Phase = RpScenePhase.Setup,
+                EscalationBudget = 1f,
+                EscalationRatePerTick = 0.05f,
+                ActiveThreads = ["The scout is deciding whether the player is a threat or a potential ally."],
+                ForeshadowedElements = ["The scout's hive is running low on safe territory."]
+            },
+            Continuity = new RpContinuityState
+            {
+                Flags = ["first_contact_not_yet_made"]
+            },
+            Characters =
+            [
+                new RpWorldContextCharacter
+                {
+                    Name = "Scout Vexa",
+                    IsNamedCharacter = true,
+                    Visibility = RpContextVisibility.WorldOnly,
+                    Archetype = "scout",
+                    Race = "Changeling",
+                    BodyType = BodyTypeKind.Changeling,
+                    FactionId = "cavern_changelings",
+                    RoleInWorld = "Forward scout deciding whether to report the player as a threat.",
+                    PersonalityText = "Cautious, pragmatic, values her hive's survival over glory.",
+                    GoalText = "Assess whether the intruder is dangerous before deciding to fight or withdraw.",
+                    TagsText = "changeling, sapient, scout",
+                    BehaviorProtocol = new RpCharacterBehaviorProtocol
+                    {
+                        SpeechStyle = "Clipped, wary sentences. Asks questions more than she answers them.",
+                        FirstEncounterBehavior = "Keeps distance, watches the player's hands/items, does not attack unless approached aggressively.",
+                        NegotiationStyle = "Trades information for information. Will not reveal hive locations easily.",
+                        EscalationPattern = "Backs toward an exit before committing to a fight; prefers threats to violence.",
+                        DeEscalationPattern = "Responds well to the player standing still and lowering weapons.",
+                        RelationshipHandling = "Loyalty to her hive is absolute; loyalty to individuals must be earned.",
+                        DeceptionMode = "Will bluff about her own strength but will not lie about facts she considers sacred (hive safety).",
+                        CombatPreferences = "Prefers hit-and-run; avoids prolonged melee.",
+                        CapturePreferences = "Would rather flee than be captured; sees capture as a hive-level failure."
+                    },
+                    RelationshipRules =
+                    [
+                        new RpRelationshipRule
+                        {
+                            TargetNameOrTag = "player",
+                            Type = RpRelationshipType.Unknown,
+                            Trust = 0,
+                            Fear = 20,
+                            Suspicion = 40,
+                            HandlingRules = "Starts guarded. Should shift toward Ally or Enemy based on how the first conversation goes, not stay Unknown forever."
+                        }
+                    ]
+                }
+            ]
+        };
+
+        world.WorldContexts.Add(showcaseContext);
+
+        var oldChangeling = world.Characters.Values
+            .FirstOrDefault(c => c.FactionId == "cavern_changelings");
+        if (oldChangeling != null)
+        {
+            if (world.Tiles.TryGetValue(oldChangeling.Position, out var tile))
+            {
+                tile.OccupantIds.Remove(oldChangeling.Id);
+            }
+            world.Characters.Remove(oldChangeling.Id);
+        }
+
+        var vexaCharacter = new Character
+        {
+            Name = "Scout Vexa",
+            Race = "Changeling",
+            Position = new Vec3Int(3, 0, 1),
+            PersonalityTraits = ["cautious", "pragmatic"],
+            Ideals = ["protect the hive"],
+            Desires = ["assess the intruder before committing to a fight"],
+            Abilities = ["ambush", "flight"],
+            RpTags = ["changeling", "sapient", "scout"],
+            Mood = "wary",
+            FactionId = "cavern_changelings",
+            CurrentGoal = new Goal { Description = "Assess whether the intruder is dangerous before deciding to fight or withdraw." },
+            LifeGoal = new Goal { Description = "Ensure the hive's survival." },
+            BodyType = BodyTypeKind.Changeling,
+            Body = RpBodyFactory.CreateBody(BodyTypeKind.Changeling),
+            Vitals = new RpVitals
+            {
+                HealthMax = 80,
+                HealthCurrent = 80,
+                ManaMax = 20,
+                ManaCurrent = 10,
+                FocusMax = 45,
+                FocusCurrent = 45,
+                StaminaMax = 90,
+                StaminaCurrent = 90,
+                ManaRegenPerTick = 1,
+                FocusRegenPerTick = 3,
+                StaminaRegenPerTick = 5
+            },
+            ActionSpeeds = new RpActionSpeeds { MoveSpeed = 1.15f, AttackSpeed = 1.2f, CastSpeed = 0.8f },
+            StaminaMax = 90,
+            StaminaCurrent = 90
+        };
+        AddCharacter(world, vexaCharacter);
+
+        RpSimulationService.UpdatePerception(world);
+        AddEvent(world, "System", "Negotiation showcase loaded. Scout Vexa is nearby and ready to talk.");
+        return world;
+    }
+
     public static World CreateGlassAtriumFlightTestWorld()
     {
         var world = new World

@@ -102,6 +102,12 @@ public sealed partial class TestMapsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void LoadNegotiationShowcaseTestMap()
+    {
+        LoadTestWorld(RpWorldFactory.CreateNegotiationShowcaseWorld(), "Loaded negotiation showcase — talk to Scout Vexa before things escalate.");
+    }
+
+    [RelayCommand]
     public void LoadGlassAtriumFlightTestMap()
     {
         LoadTestWorld(RpWorldFactory.CreateGlassAtriumFlightTestWorld(), "Loaded glass atrium flight map. Center cells on upper slices are open space, not floors.");
