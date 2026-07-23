@@ -1,0 +1,22 @@
+﻿<?xml version = "1.0" encoding = "UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:RPSystem"
+             xmlns:converters="clr-namespace:RPSystem.Converters"
+             x:Class="RPSystem.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Converters -->
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter"/>
+            <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+            <converters:BoolToStatusTextConverter x:Key="BoolToStatusTextConverter"/>
+            <converters:BoolToStatusConverter x:Key="BoolToStatusConverter"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
